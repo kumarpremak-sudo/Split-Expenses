@@ -1,4 +1,4 @@
-const CACHE_NAME = 'splitexp-v1';
+const CACHE_NAME = 'splitexp-v2';
 const STATIC_ASSETS = [
     '/',
     '/static/css/style.css',
@@ -36,7 +36,11 @@ self.addEventListener('activate', function (event) {
 self.addEventListener('fetch', function (event) {
     const url = new URL(event.request.url);
 
-    if (url.pathname.startsWith('/api/')) {
+    // Dynamic routes & APIs: Bypass SW cache completely to enforce session security & fresh server validation
+    if (url.pathname.startsWith('/group/') ||
+        url.pathname.startsWith('/join') ||
+        url.pathname.startsWith('/create') ||
+        url.pathname.startsWith('/api/')) {
         return;
     }
 

@@ -248,3 +248,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
+/* --- BFCache & Back-Button Session Security --- */
+window.addEventListener('pageshow', function (event) {
+    // Force fresh server validation if restored from browser BFCache
+    if (event.persisted) {
+        window.location.reload();
+    }
+});
+
