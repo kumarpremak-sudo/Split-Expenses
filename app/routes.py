@@ -304,6 +304,56 @@ def add_expense(group_uuid):
     return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
 
 
+@main_bp.route('/group/<group_uuid>/edit-expense/<int:expense_id>', methods=['POST'])
+@require_group_access
+def edit_expense(group_uuid, expense_id):
+    group = _get_group_or_404(group_uuid)
+    expense = Expense.query.filter_by(id=expense_id, group_id=group.id).first_or_404()
+
+    paid_by_raw = request.form.get('paid_by')
+    amount_raw = request.form.get('amount')
+    description = request.form.get('description', '').strip()
+    category = request.form.get('category', 'Other')
+    split_among_raw = request.form.getlist('split_among')
+
+    if not all([paid_by_raw, amount_raw, description]):
+        flash('Please fill in all required fields.', 'error')
+        return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
+
+    try:
+        paid_by_id = int(paid_by_raw)
+        amount = float(amount_raw)
+    except (ValueError, TypeError):
+        flash('Invalid amount or payer selection.', 'error')
+        return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
+
+    if amount < 0.01 or amount > 1_000_000_000:
+        flash('Amount must be positive.', 'error')
+        return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
+
+    group_member_ids = {m.id for m in group.members}
+    if paid_by_id not in group_member_ids:
+        flash('Selected payer is not a member of this group.', 'error')
+        return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
+
+    split_ids = [int(sid) for sid in split_among_raw if sid.isdigit()]
+    valid_split_ids = [sid for sid in split_ids if sid in group_member_ids]
+
+    if not valid_split_ids:
+        valid_split_ids = list(group_member_ids)
+
+    expense.paid_by_id = paid_by_id
+    expense.amount = round(amount, 2)
+    expense.description = description[:200]
+    expense.category = category
+    expense.split_among = json.dumps(valid_split_ids)
+
+    db.session.commit()
+    flash('Expense updated successfully.', 'success')
+
+    return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
+
+
 @main_bp.route('/group/<group_uuid>/delete-expense/<int:expense_id>', methods=['POST'])
 @require_group_access
 def delete_expense(group_uuid, expense_id):
@@ -341,12 +391,28 @@ def settle(group_uuid):
 
 
 # ───────────────────────────────────────────
-#  Leave Group
+#  Leave & Delete Group
 # ───────────────────────────────────────────
 
 @main_bp.route('/group/<group_uuid>/leave', methods=['POST'])
 def leave_group(group_uuid):
     session.pop(_get_session_key(group_uuid), None)
+    flash('You have left the group.', 'info')
+    return redirect(url_for('main.index'))
+
+
+@main_bp.route('/group/<group_uuid>/delete', methods=['POST'])
+@require_group_access
+def delete_group(group_uuid):
+    group = _get_group_or_404(group_uuid)
+    group_name = group.name
+
+    db.session.delete(group)
+    db.session.commit()
+
+    session.pop(_get_session_key(group_uuid), None)
+    session.pop(f'verified_{group_uuid}', None)
+    flash(f'Group "{group_name}" and all associated expenses have been permanently deleted.', 'success')
     return redirect(url_for('main.index'))
 
 

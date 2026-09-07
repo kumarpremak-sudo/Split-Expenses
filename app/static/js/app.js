@@ -84,10 +84,14 @@ function copyShareInfo() {
 
 /**
  * Toggle all member checkboxes in the "Split Among" section.
- * Linked to the "Select All" master checkbox.
+ * Linked to the "Select All" master checkbox (scoped per form).
  */
 function toggleAllMembers(selectAllCheckbox) {
-    const checkboxes = document.querySelectorAll('.member-checkbox');
+    if (!selectAllCheckbox) return;
+    const form = selectAllCheckbox.closest('form');
+    if (!form) return;
+
+    const checkboxes = form.querySelectorAll('.member-checkbox');
     checkboxes.forEach(function (cb) {
         cb.checked = selectAllCheckbox.checked;
     });
@@ -96,9 +100,15 @@ function toggleAllMembers(selectAllCheckbox) {
 /**
  * Sync the "Select All" checkbox state when individual checkboxes change.
  */
-function syncSelectAll() {
-    const selectAll = document.getElementById('select-all-members');
-    const checkboxes = document.querySelectorAll('.member-checkbox');
+function syncSelectAll(event) {
+    const target = event ? event.target : null;
+    if (!target) return;
+
+    const form = target.closest('form');
+    if (!form) return;
+
+    const selectAll = form.querySelector('#select-all-members');
+    const checkboxes = form.querySelectorAll('.member-checkbox');
     if (!selectAll || checkboxes.length === 0) return;
 
     const allChecked = Array.from(checkboxes).every(function (cb) {
@@ -174,6 +184,43 @@ function switchLandingTab(tabName) {
     }
 }
 
+/* --- Expense Edit Toggle --- */
+function toggleEditExpense(expenseId) {
+    const panel = document.getElementById('edit-panel-' + expenseId);
+    if (!panel) return;
+
+    if (panel.style.display === 'none' || !panel.style.display) {
+        panel.style.display = 'block';
+        const descInput = panel.querySelector('input[name="description"]');
+        if (descInput) descInput.focus();
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+/* --- Select Member Chip Handler --- */
+function selectMemberChip(element) {
+    if (!element) return;
+    const name = element.dataset.memberName;
+    const nameInput = document.getElementById('member-name');
+    if (nameInput && name) {
+        nameInput.value = name;
+        nameInput.focus();
+    }
+
+    const chips = document.querySelectorAll('.selectable-member-chip');
+    chips.forEach(function (chip) {
+        chip.classList.remove('active');
+    });
+
+    element.classList.add('active');
+}
+
+/* Backward compatibility alias */
+function selectMemberName(name, element) {
+    selectMemberChip(element);
+}
+
 /* --- Init --- */
 document.addEventListener('DOMContentLoaded', function () {
     updateOnlineStatus();
@@ -182,5 +229,22 @@ document.addEventListener('DOMContentLoaded', function () {
     memberCheckboxes.forEach(function (cb) {
         cb.addEventListener('change', syncSelectAll);
     });
+
+    // Auto-highlight member chip if user types a matching name manually
+    const nameInput = document.getElementById('member-name');
+    if (nameInput) {
+        nameInput.addEventListener('input', function () {
+            const currentVal = nameInput.value.trim().toLowerCase();
+            const chips = document.querySelectorAll('.selectable-member-chip');
+            chips.forEach(function (chip) {
+                const chipName = (chip.dataset.memberName || '').trim().toLowerCase();
+                if (chipName === currentVal && currentVal !== '') {
+                    chip.classList.add('active');
+                } else {
+                    chip.classList.remove('active');
+                }
+            });
+        });
+    }
 });
 

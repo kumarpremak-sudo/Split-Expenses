@@ -31,14 +31,36 @@
             <span>{{ group.name }}</span>
         </div>
 
-        <h2 class="form-title">What's your name?</h2>
+        <h2 class="form-title">Select or Enter Your Name</h2>
         <p class="form-subtitle">
-            If you're already a member, enter your exact name to reconnect. Otherwise, you'll be added as a new member.
+            If you're already a member of <strong>{{ group.name }}</strong>, click your name below to reconnect.
         </p>
 
         <form action="{{ url_for('main.join_set_name', group_uuid=group.uuid) }}" method="POST" id="set-name-form">
+            
+            {% if group.members %}
+            <div class="existing-members-section">
+                <label class="form-label">Existing Group Members:</label>
+                <div class="selectable-members-grid">
+                    {% for member in group.members %}
+                    <button type="button" 
+                            class="selectable-member-chip" 
+                            id="member-chip-{{ member.id }}"
+                            data-member-name="{{ member.name }}"
+                            onclick="selectMemberChip(this)">
+                        <span class="chip-avatar">{{ member.name[0]|upper }}</span>
+                        <span class="chip-name">{{ member.name }}</span>
+                        <span class="chip-check">✓</span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="divider-or"><span>OR JOIN AS A NEW MEMBER</span></div>
+            {% endif %}
+
             <div class="form-group">
-                <label for="member-name" class="form-label">Your Name</label>
+                <label for="member-name" class="form-label">{% if group.members %}New Member Name{% else %}Your Name{% endif %}</label>
                 <input
                     type="text"
                     id="member-name"
@@ -47,20 +69,9 @@
                     placeholder="e.g., Ravi"
                     required
                     maxlength="50"
-                    autofocus
+                    {% if not group.members %}autofocus{% endif %}
                 >
             </div>
-
-            {% if group.members %}
-            <div class="existing-members-hint">
-                <span class="form-label">Current members:</span>
-                <div class="members-tags">
-                    {% for member in group.members %}
-                    <span class="member-tag">{{ member.name }}</span>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
 
             <button type="submit" class="btn btn-primary btn-lg btn-block" id="join-name-submit">
                 🎉 Join Group

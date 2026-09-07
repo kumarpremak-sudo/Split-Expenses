@@ -66,8 +66,15 @@ class Expense(db.Model):
 
     paid_by = db.relationship('Member', backref='expenses_paid')
 
-    def to_dict(self):
+    @property
+    def split_among_list(self):
         import json
+        try:
+            return json.loads(self.split_among) if self.split_among else []
+        except (json.JSONDecodeError, TypeError):
+            return []
+
+    def to_dict(self):
         return {
             'id': self.id,
             'paid_by_id': self.paid_by_id,
@@ -75,6 +82,32 @@ class Expense(db.Model):
             'amount': self.amount,
             'description': self.description,
             'category': self.category,
-            'split_among': json.loads(self.split_among),
+            'split_among': self.split_among_list,
             'created_at': self.created_at.isoformat(),
         }
+
+
+def cleanup_expired_groups(ttl_days=90):
+    """
+    Deletes groups created more than `ttl_days` ago.
+    Thanks to SQLite cascade rules (cascade='all, delete-orphan'),
+    deleting a Group automatically purges all associated Members and Expenses.
+
+    Args:
+        ttl_days (int): TTL threshold in days (default: 90).
+
+    Returns:
+        int: Number of expired groups deleted.
+    """
+    from datetime import timedelta
+    cutoff = datetime.now(timezone.utc) - timedelta(days=ttl_days)
+    expired_groups = Group.query.filter(Group.created_at < cutoff).all()
+
+    count = len(expired_groups)
+    for group in expired_groups:
+        db.session.delete(group)
+
+    if count > 0:
+        db.session.commit()
+
+    return count

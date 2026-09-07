@@ -17,6 +17,12 @@
                     🚪 Leave
                 </button>
             </form>
+            <form action="{{ url_for('main.delete_group', group_uuid=group.uuid) }}" method="POST" class="inline-delete">
+                <button type="submit" class="btn btn-danger btn-sm" id="delete-group-btn"
+                    onclick="return confirm('⚠️ Danger: Permanently delete group \'{{ group.name }}\' and all its expenses? This cannot be undone!')">
+                    🗑️ Delete
+                </button>
+            </form>
         </div>
     </div>
     <div class="share-info-box" id="share-info-box">
@@ -154,7 +160,7 @@
                     <div>
                         <div class="expense-description">{{ expense.description }}</div>
                         <div class="expense-meta">
-                            Paid by <strong>{{ expense.paid_by.name }}</strong> · {{ expense.category }}
+                            Paid by <strong>{{ expense.paid_by.name if expense.paid_by else 'Unknown' }}</strong> · {{ expense.category }}
                         </div>
                     </div>
                 </div>
@@ -163,10 +169,66 @@
                 </div>
             </div>
             <div class="expense-actions">
+                <button type="button" class="btn btn-outline btn-sm" id="edit-btn-{{ expense.id }}" onclick="toggleEditExpense('{{ expense.id }}')">
+                    ✏️ Edit
+                </button>
                 <form action="{{ url_for('main.delete_expense', group_uuid=group.uuid, expense_id=expense.id) }}"
                       method="POST" class="delete-form"
                       onsubmit="return confirm('Delete this expense?')">
                     <button type="submit" class="btn btn-danger btn-sm" id="delete-expense-{{ expense.id }}">🗑️ Delete</button>
+                </form>
+            </div>
+            
+            <!-- Inline Edit Panel -->
+            <div class="expense-edit-panel" id="edit-panel-{{ expense.id }}" style="display: none;">
+                <form action="{{ url_for('main.edit_expense', group_uuid=group.uuid, expense_id=expense.id) }}" method="POST">
+                    <h4 class="edit-panel-title">✏️ Edit Expense</h4>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <input type="text" name="description" class="form-input" value="{{ expense.description }}" required maxlength="200">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group form-group-half">
+                            <label class="form-label">Amount ({{ currency_symbol }})</label>
+                            <input type="number" name="amount" step="0.01" min="0.01" class="form-input" value="{{ '%.2f'|format(expense.amount) }}" required>
+                        </div>
+                        <div class="form-group form-group-half">
+                            <label class="form-label">Paid By</label>
+                            <select name="paid_by" class="form-input form-select" required>
+                                {% for member in group.members %}
+                                <option value="{{ member.id }}" {% if member.id == expense.paid_by_id %}selected{% endif %}>
+                                    {{ member.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select name="category" class="form-input form-select">
+                            {% for cat in categories %}
+                            <option value="{{ cat }}" {% if cat == expense.category %}selected{% endif %}>{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Split Among</label>
+                        {% set current_splits = expense.split_among_list %}
+                        <div class="checkbox-grid">
+                            {% for member in group.members %}
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="split_among" value="{{ member.id }}"
+                                    {% if member.id in current_splits %}checked{% endif %} class="member-checkbox">
+                                <span class="checkbox-custom"></span>
+                                {{ member.name }}
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="form-row" style="margin-top: var(--space-md);">
+                        <button type="submit" class="btn btn-primary btn-sm">💾 Save Changes</button>
+                        <button type="button" class="btn btn-outline btn-sm" onclick="toggleEditExpense('{{ expense.id }}')">Cancel</button>
+                    </div>
                 </form>
             </div>
         </div>
