@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Split Expenses — Split Travel Costs Easily{% endblock %}
+
+{% block content %}
+<div class="landing-split-container">
+    <!-- LEFT COLUMN: Hero Branding & Features -->
+    <div class="landing-left">
+        <span class="hero-badge">✨ Multi-Currency & PIN Protected</span>
+        <h1 class="hero-title">
+            Split <span class="gradient-text">Expenses</span> Easily
+        </h1>
+        <p class="hero-subtitle">
+            Create a group, share the name & PIN, and let everyone add expenses.
+            We'll calculate who owes whom — no login required!
+        </p>
+
+        <!-- Features List -->
+        <div class="features-list">
+            <div class="feature-item">
+                <div class="feature-icon-wrapper">🔒</div>
+                <div class="feature-text">
+                    <h3>PIN Protected Groups</h3>
+                    <p>Each group is secured with a PIN. Share it only with your travel buddies.</p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon-wrapper">💸</div>
+                <div class="feature-text">
+                    <h3>Track & Categorize</h3>
+                    <p>Log food, tickets, transport, prasadham & custom expenses instantly.</p>
+                </div>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon-wrapper">⚖️</div>
+                <div class="feature-text">
+                    <h3>Fair Settlement</h3>
+                    <p>Smart algorithm calculates the minimum transactions to settle all debts.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Interactive Action Hub (Create / Join Tabs) -->
+    <div class="landing-right">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}" id="flash-msg">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="landing-action-card">
+            <!-- Tabs Header -->
+            <div class="landing-tabs">
+                <button type="button" class="tab-btn active" id="tab-btn-create" onclick="switchLandingTab('create')">
+                    🚀 Create Group
+                </button>
+                <button type="button" class="tab-btn" id="tab-btn-join" onclick="switchLandingTab('join')">
+                    🔑 Join Group
+                </button>
+            </div>
+
+            <!-- TAB 1: Create Group -->
+            <div class="tab-content" id="landing-create-content">
+                <h2 class="form-card-title">Create a New Group</h2>
+                <form action="{{ url_for('main.create_group') }}" method="POST" id="create-group-form">
+
+                    <div class="form-group">
+                        <label for="group-name" class="form-label">Group Name</label>
+                        <input
+                            type="text"
+                            id="group-name"
+                            name="group_name"
+                            class="form-input"
+                            placeholder="e.g., Tirupati Trip 2026"
+                            required
+                            maxlength="100"
+                        >
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group form-group-half">
+                            <label for="currency-select" class="form-label">Currency</label>
+                            <select id="currency-select" name="currency" class="form-input form-select">
+                                {% for curr in currencies %}
+                                <option value="{{ curr.code }}" {% if curr.code == 'INR' %}selected{% endif %}>
+                                    {{ curr.symbol }} {{ curr.code }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group form-group-half">
+                            <label for="group-pin" class="form-label">PIN (4-6 chars)</label>
+                            <input
+                                type="password"
+                                id="group-pin"
+                                name="pin"
+                                class="form-input"
+                                placeholder="e.g., 1234"
+                                required
+                                minlength="4"
+                                maxlength="6"
+                                autocomplete="new-password"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="creator-name" class="form-label">Your Name</label>
+                        <input
+                            type="text"
+                            id="creator-name"
+                            name="creator_name"
+                            class="form-input"
+                            placeholder="e.g., Ravi"
+                            required
+                            maxlength="50"
+                        >
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg btn-block" id="create-group-submit">
+                        🚀 Create Group & Start
+                    </button>
+                </form>
+            </div>
+
+            <!-- TAB 2: Join Group -->
+            <div class="tab-content" id="landing-join-content" style="display: none;">
+                <h2 class="form-card-title">Join Existing Group</h2>
+                <p class="tab-card-desc">Have a group name & PIN? Enter them below to join your group.</p>
+                <form action="{{ url_for('main.join_group') }}" method="POST" id="join-group-form">
+
+                    <div class="form-group">
+                        <label for="join-group-name" class="form-label">Group Name</label>
+                        <input
+                            type="text"
+                            id="join-group-name"
+                            name="group_name"
+                            class="form-input"
+                            placeholder="e.g., Tirupati Trip 2026"
+                            required
+                            maxlength="100"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="join-group-pin" class="form-label">Group PIN</label>
+                        <input
+                            type="password"
+                            id="join-group-pin"
+                            name="pin"
+                            class="form-input"
+                            placeholder="Enter 4-6 digit PIN"
+                            required
+                            minlength="4"
+                            maxlength="6"
+                        >
+                    </div>
+
+                    <button type="submit" class="btn btn-accent btn-lg btn-block" id="join-group-submit">
+                        🔑 Verify PIN & Join
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

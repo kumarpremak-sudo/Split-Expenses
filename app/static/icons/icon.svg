@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#0f172a"/>
+  <circle cx="256" cy="220" r="120" fill="none" stroke="#14b8a6" stroke-width="16"/>
+  <path d="M220 180 L220 260 Q220 280 240 280 L260 280" stroke="#14b8a6" stroke-width="16" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M200 200 L240 200" stroke="#14b8a6" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <path d="M200 240 L240 240" stroke="#14b8a6" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <line x1="256" y1="100" x2="256" y2="340" stroke="#f59e0b" stroke-width="4" stroke-dasharray="8,8" opacity="0.6"/>
+  <circle cx="180" cy="400" r="40" fill="#14b8a6" opacity="0.2"/>
+  <circle cx="332" cy="400" r="40" fill="#f59e0b" opacity="0.2"/>
+  <text x="180" y="408" text-anchor="middle" fill="#14b8a6" font-family="sans-serif" font-size="28" font-weight="bold">₹</text>
+  <text x="332" y="408" text-anchor="middle" fill="#f59e0b" font-family="sans-serif" font-size="28" font-weight="bold">$</text>
+  <path d="M232 396 L280 396" stroke="#94a3b8" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M268 386 L280 396 L268 406" stroke="#94a3b8" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

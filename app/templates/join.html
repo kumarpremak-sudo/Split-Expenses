@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Join Group — Split Expenses{% endblock %}
+
+{% block content %}
+<section class="hero hero-compact">
+    <h1 class="hero-title hero-title-sm">
+        🔑 Join a <span class="gradient-text">Group</span>
+    </h1>
+    <p class="hero-subtitle">
+        Enter the group name and PIN shared by the group creator.
+    </p>
+</section>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="flash-messages">
+    {% for category, message in messages %}
+    <div class="flash-message flash-{{ category }}" id="flash-msg">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<section class="create-group-section">
+    <div class="form-card">
+        <h2 class="form-title">Enter Group Details</h2>
+        <form action="{{ url_for('main.join_group') }}" method="POST" id="join-group-form">
+
+            <div class="form-group">
+                <label for="join-group-name" class="form-label">Group Name</label>
+                <input
+                    type="text"
+                    id="join-group-name"
+                    name="group_name"
+                    class="form-input"
+                    placeholder="e.g., Tirupati Trip 2026"
+                    required
+                    maxlength="100"
+                    value="{{ group_name or '' }}"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="join-pin" class="form-label">Group PIN</label>
+                <input
+                    type="password"
+                    id="join-pin"
+                    name="pin"
+                    class="form-input"
+                    placeholder="Enter the PIN"
+                    required
+                    minlength="4"
+                    maxlength="6"
+                    autocomplete="current-password"
+                >
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg btn-block" id="join-submit">
+                🔓 Verify & Join
+            </button>
+        </form>
+
+        <div class="form-footer">
+            <a href="{{ url_for('main.index') }}" class="back-link">← Back to Home</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

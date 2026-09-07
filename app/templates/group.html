@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }} — Split Expenses{% endblock %}
+
+{% block content %}
+<section class="group-header">
+    <div class="group-header-top">
+        <div class="group-header-info">
+            <h1 class="group-name" id="group-title">{{ group.name }}</h1>
+            <span class="currency-badge" id="currency-badge">{{ currency_symbol }} {{ group.currency }}</span>
+        </div>
+        <div class="user-session-info" id="user-session-info">
+            <span class="user-avatar">{{ current_member.member_name[0] }}</span>
+            <span class="user-name">{{ current_member.member_name }}</span>
+            <form action="{{ url_for('main.leave_group', group_uuid=group.uuid) }}" method="POST" class="inline-leave">
+                <button type="submit" class="btn btn-outline btn-sm" id="leave-group-btn"
+                    onclick="return confirm('Leave this group? You can rejoin with the PIN.')">
+                    🚪 Leave
+                </button>
+            </form>
+        </div>
+    </div>
+    <div class="share-info-box" id="share-info-box">
+        <label class="form-label">Share with your group:</label>
+        <div class="share-details">
+            <div class="share-item">
+                <span class="share-label">Group Name:</span>
+                <span class="share-value" id="share-group-name">{{ group.name }}</span>
+            </div>
+            <div class="share-item">
+                <span class="share-label">PIN:</span>
+                <span class="share-value share-pin" id="share-pin" data-pin="{{ current_member.pin if current_member and current_member.pin else '' }}">••••</span>
+                <button type="button" class="btn btn-outline btn-sm" id="toggle-pin-btn" onclick="togglePinVisibility()">
+                    👁️ Show
+                </button>
+            </div>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" id="copy-share-btn" onclick="copyShareInfo()">
+            📋 Copy Share Text
+        </button>
+    </div>
+</section>
+
+<!-- Members Section -->
+<section class="section-card" id="members-section">
+    <div class="section-header">
+        <h2 class="section-title">👥 Members ({{ group.members|length }})</h2>
+    </div>
+    <div class="members-tags">
+        {% for member in group.members %}
+        <span class="member-tag {% if member.id == current_member.member_id %}member-tag-current{% endif %}" id="member-tag-{{ member.id }}">
+            {{ member.name }}
+            {% if member.id == current_member.member_id %}
+            <span class="you-badge">you</span>
+            {% endif %}
+        </span>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Add Expense Section -->
+<section class="section-card" id="add-expense-section">
+    <div class="section-header">
+        <h2 class="section-title">➕ Add Expense</h2>
+    </div>
+    <form action="{{ url_for('main.add_expense', group_uuid=group.uuid) }}" method="POST" id="add-expense-form">
+        <div class="form-row">
+            <div class="form-group form-group-half">
+                <label for="paid-by-select" class="form-label">Paid By</label>
+                <select id="paid-by-select" name="paid_by" class="form-input form-select" required>
+                    <option value="">Select who paid</option>
+                    {% for member in group.members %}
+                    <option value="{{ member.id }}" {% if member.id == current_member.member_id %}selected{% endif %}>
+                        {{ member.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group form-group-half">
+                <label for="expense-amount" class="form-label">Amount ({{ currency_symbol }})</label>
+                <input type="number" id="expense-amount" name="amount" class="form-input"
+                    placeholder="0.00" step="0.01" min="0.01" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group form-group-half">
+                <label for="expense-description" class="form-label">Description</label>
+                <input type="text" id="expense-description" name="description" class="form-input"
+                    placeholder="e.g., Lunch at hotel" required maxlength="200">
+            </div>
+            <div class="form-group form-group-half">
+                <label for="expense-category" class="form-label">Category</label>
+                <select id="expense-category" name="category" class="form-input form-select">
+                    {% for cat in categories %}
+                    <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Split Among</label>
+            <div class="split-options" id="split-options">
+                <label class="checkbox-label select-all-label">
+                    <input type="checkbox" id="select-all-members" checked onchange="toggleAllMembers(this)">
+                    <span class="checkbox-custom"></span>
+                    Select All
+                </label>
+                {% for member in group.members %}
+                <label class="checkbox-label" id="split-label-{{ member.id }}">
+                    <input type="checkbox" name="split_among" value="{{ member.id }}" checked class="member-checkbox">
+                    <span class="checkbox-custom"></span>
+                    {{ member.name }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="add-expense-submit">
+            💰 Add Expense
+        </button>
+    </form>
+</section>
+
+<!-- Expenses List -->
+<section class="section-card" id="expenses-list-section">
+    <div class="section-header">
+        <h2 class="section-title">📝 Expenses</h2>
+        {% if group.expenses %}
+        <span class="total-badge" id="total-spent-badge">
+            Total: {{ currency_symbol }}{{ "%.2f"|format(group.expenses|sum(attribute='amount')) }}
+        </span>
+        {% endif %}
+    </div>
+
+    {% if group.expenses %}
+    <div class="expenses-list">
+        {% for expense in group.expenses|sort(attribute='created_at', reverse=true) %}
+        <div class="expense-item" id="expense-item-{{ expense.id }}">
+            <div class="expense-main">
+                <div class="expense-info">
+                    <span class="expense-category-icon">
+                        {% if expense.category == 'Food & Drinks' %}🍽️
+                        {% elif expense.category == 'Transport' %}🚗
+                        {% elif expense.category == 'Tickets & Entry' %}🎫
+                        {% elif expense.category == 'Accommodation' %}🏨
+                        {% elif expense.category == 'Prasadham & Pooja' %}🙏
+                        {% elif expense.category == 'Shopping' %}🛍️
+                        {% elif expense.category == 'Medical' %}💊
+                        {% elif expense.category == 'Tips' %}💵
+                        {% else %}📦
+                        {% endif %}
+                    </span>
+                    <div>
+                        <div class="expense-description">{{ expense.description }}</div>
+                        <div class="expense-meta">
+                            Paid by <strong>{{ expense.paid_by.name }}</strong> · {{ expense.category }}
+                        </div>
+                    </div>
+                </div>
+                <div class="expense-amount">
+                    {{ currency_symbol }}{{ "%.2f"|format(expense.amount) }}
+                </div>
+            </div>
+            <div class="expense-actions">
+                <form action="{{ url_for('main.delete_expense', group_uuid=group.uuid, expense_id=expense.id) }}"
+                      method="POST" class="delete-form"
+                      onsubmit="return confirm('Delete this expense?')">
+                    <button type="submit" class="btn btn-danger btn-sm" id="delete-expense-{{ expense.id }}">🗑️ Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" id="no-expenses-message">
+        <span class="empty-icon">📭</span>
+        <p>No expenses yet. Add the first one above!</p>
+    </div>
+    {% endif %}
+</section>
+
+<!-- Settlement Button -->
+{% if group.expenses %}
+<div class="settle-cta">
+    <a href="{{ url_for('main.settle', group_uuid=group.uuid) }}" class="btn btn-accent btn-lg btn-block" id="view-settlements-btn">
+        ⚖️ View Settlements
+    </a>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Enter Your Name — {{ group.name }} — Split Expenses{% endblock %}
+
+{% block content %}
+<section class="hero hero-compact">
+    <h1 class="hero-title hero-title-sm">
+        ✅ PIN <span class="gradient-text">Verified!</span>
+    </h1>
+    <p class="hero-subtitle">
+        You're joining <strong>{{ group.name }}</strong>. Enter your name to continue.
+    </p>
+</section>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="flash-messages">
+    {% for category, message in messages %}
+    <div class="flash-message flash-{{ category }}" id="flash-msg">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<section class="create-group-section">
+    <div class="form-card">
+        <div class="join-group-badge" id="join-group-badge">
+            <span class="join-group-icon">👥</span>
+            <span>{{ group.name }}</span>
+        </div>
+
+        <h2 class="form-title">What's your name?</h2>
+        <p class="form-subtitle">
+            If you're already a member, enter your exact name to reconnect. Otherwise, you'll be added as a new member.
+        </p>
+
+        <form action="{{ url_for('main.join_set_name', group_uuid=group.uuid) }}" method="POST" id="set-name-form">
+            <div class="form-group">
+                <label for="member-name" class="form-label">Your Name</label>
+                <input
+                    type="text"
+                    id="member-name"
+                    name="member_name"
+                    class="form-input"
+                    placeholder="e.g., Ravi"
+                    required
+                    maxlength="50"
+                    autofocus
+                >
+            </div>
+
+            {% if group.members %}
+            <div class="existing-members-hint">
+                <span class="form-label">Current members:</span>
+                <div class="members-tags">
+                    {% for member in group.members %}
+                    <span class="member-tag">{{ member.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary btn-lg btn-block" id="join-name-submit">
+                🎉 Join Group
+            </button>
+        </form>
+
+        <div class="form-footer">
+            <a href="{{ url_for('main.join_group') }}" class="back-link">← Use a different group</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
