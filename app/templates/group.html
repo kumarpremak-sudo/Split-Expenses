@@ -13,13 +13,13 @@
             <span class="user-name">{{ current_member.member_name }}</span>
             <form action="{{ url_for('main.leave_group', group_uuid=group.uuid) }}" method="POST" class="inline-leave">
                 <button type="submit" class="btn btn-outline btn-sm" id="leave-group-btn"
-                    onclick="return confirm('Leave this group? You can rejoin with the PIN.')">
+                    onclick="return confirmFormSubmit(event, 'Leave Group', 'Leave this group? You can rejoin anytime using the group name and PIN.', '🚪 Leave Group', '🚪', 'btn-outline')">
                     🚪 Leave
                 </button>
             </form>
             <form action="{{ url_for('main.delete_group', group_uuid=group.uuid) }}" method="POST" class="inline-delete">
                 <button type="submit" class="btn btn-danger btn-sm" id="delete-group-btn"
-                    onclick="return confirm('⚠️ Danger: Permanently delete group \'{{ group.name }}\' and all its expenses? This cannot be undone!')">
+                    onclick="return confirmFormSubmit(event, 'Delete Group', 'Permanently delete group \'{{ group.name }}\' and all its expenses? This action cannot be undone!', '🗑️ Delete Group', '⚠️', 'btn-danger')">
                     🗑️ Delete
                 </button>
             </form>
@@ -173,9 +173,11 @@
                     ✏️ Edit
                 </button>
                 <form action="{{ url_for('main.delete_expense', group_uuid=group.uuid, expense_id=expense.id) }}"
-                      method="POST" class="delete-form"
-                      onsubmit="return confirm('Delete this expense?')">
-                    <button type="submit" class="btn btn-danger btn-sm" id="delete-expense-{{ expense.id }}">🗑️ Delete</button>
+                      method="POST" class="delete-form">
+                    <button type="submit" class="btn btn-danger btn-sm" id="delete-expense-{{ expense.id }}"
+                        onclick="return confirmFormSubmit(event, 'Delete Expense', 'Are you sure you want to remove this expense record?', '🗑️ Delete Expense', '🗑️', 'btn-danger')">
+                        🗑️ Delete
+                    </button>
                 </form>
             </div>
             

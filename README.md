@@ -8,11 +8,14 @@ A mobile-friendly **Progressive Web App (PWA)** built with Flask for splitting t
 
 - 🔐 **Isolated Groups & PIN Security**: Group creators set a Group Name and PIN. Friends join using the Group Name + PIN. No full user registration required.
 - 👥 **1-Click Interactive Member Join**: Returning group members can simply click their name chip (`[ 👤 Name ✓ ]`) to join without re-typing their name.
+- 🛡️ **Cache Prevention & Session Security**: HTTP `no-store` headers, Service Worker dynamic exemptions, and BFCache auto-revalidation prevent stale browser page snapshots when pressing Back after leaving a group.
+- 🎨 **Custom Glassmorphism Confirmation Modals**: Dark-mode modal dialog system replacing plain browser popups (`confirm()`) for Leave Group, Delete Group, and Delete Expense actions.
 - 💵 **Multi-Currency Support**: Support for 15+ global and regional currencies (INR `₹`, USD `$`, EUR `€`, GBP `£`, AED `د.إ`, THB `฿`, etc.).
 - 🧮 **Zero-Drift Settlement Engine**: Smart integer cent split algorithm calculates exact minimum transactions to settle all debts without floating-point rounding drift.
 - ✏️ **Edit & Delete Expenses**: Easily edit wrong entries (amount, description, category, payer, split among) with pre-populated inline edit panels.
+- 🧹 **Automated TTL & Manual Group Cleanup**: Built-in 30-day/90-day automatic trip data cleanup script ([cleanup.py](file:///c:/Users/Admin/Documents/POC/Split%20Expenses/cleanup.py)) plus instant 1-click cascade deletion.
 - 📱 **Progressive Web App (PWA)**: Installable on Android, iOS, Windows, and macOS with standalone window support and offline caching via Service Worker.
-- 🎨 **Modern Touch-Friendly UI**: Premium mobile-first CSS design with 2-column desktop split view, dark theme, and micro-interactions.
+- ✨ **Creator Signature**: Styled application signature in global footer ("Created by Prem").
 
 ---
 

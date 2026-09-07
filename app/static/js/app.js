@@ -256,3 +256,97 @@ window.addEventListener('pageshow', function (event) {
     }
 });
 
+/* ==========================================================================
+   Custom Confirmation Modal Component
+   Replaces native browser confirm() dialogs with modern dark glassmorphic UI
+   ========================================================================== */
+
+/**
+ * Show a promise-based custom modal dialog matching the UI theme.
+ * @param {Object} options - { title, message, icon, confirmText, cancelText, confirmClass }
+ * @returns {Promise<boolean>}
+ */
+function showConfirmModal(options) {
+    return new Promise(function (resolve) {
+        options = options || {};
+        const modal = document.getElementById('custom-confirm-modal');
+        const iconEl = document.getElementById('modal-icon');
+        const titleEl = document.getElementById('modal-title');
+        const msgEl = document.getElementById('modal-message');
+        const cancelBtn = document.getElementById('modal-cancel-btn');
+        const confirmBtn = document.getElementById('modal-confirm-btn');
+
+        if (!modal || !titleEl || !msgEl || !cancelBtn || !confirmBtn) {
+            resolve(window.confirm(options.message || 'Are you sure?'));
+            return;
+        }
+
+        titleEl.textContent = options.title || 'Confirm Action';
+        msgEl.textContent = options.message || 'Are you sure you want to proceed?';
+        iconEl.textContent = options.icon || '⚠️';
+
+        confirmBtn.textContent = options.confirmText || 'Confirm';
+        confirmBtn.className = 'btn ' + (options.confirmClass || 'btn-danger');
+
+        cancelBtn.textContent = options.cancelText || 'Cancel';
+
+        modal.style.display = 'flex';
+        // Force reflow for opacity transition
+        void modal.offsetWidth;
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+
+        function cleanup(result) {
+            modal.classList.remove('active');
+            setTimeout(function () {
+                modal.style.display = 'none';
+                modal.setAttribute('aria-hidden', 'true');
+            }, 200);
+
+            confirmBtn.removeEventListener('click', onConfirm);
+            cancelBtn.removeEventListener('click', onCancel);
+            modal.removeEventListener('click', onBackdropClick);
+            document.removeEventListener('keydown', onKeyDown);
+
+            resolve(result);
+        }
+
+        function onConfirm() { cleanup(true); }
+        function onCancel() { cleanup(false); }
+        function onBackdropClick(e) { if (e.target === modal) cleanup(false); }
+        function onKeyDown(e) { if (e.key === 'Escape') cleanup(false); }
+
+        confirmBtn.addEventListener('click', onConfirm);
+        cancelBtn.addEventListener('click', onCancel);
+        modal.addEventListener('click', onBackdropClick);
+        document.addEventListener('keydown', onKeyDown);
+
+        confirmBtn.focus();
+    });
+}
+
+/**
+ * Intercept form submit button click to display custom confirm modal.
+ */
+function confirmFormSubmit(event, title, message, confirmText, icon, confirmClass) {
+    event.preventDefault();
+    const btn = event.currentTarget;
+    const form = btn.closest('form');
+    if (!form) return false;
+
+    showConfirmModal({
+        title: title || 'Are you sure?',
+        message: message || '',
+        confirmText: confirmText || 'Confirm',
+        icon: icon || '⚠️',
+        confirmClass: confirmClass || 'btn-danger'
+    }).then(function (confirmed) {
+        if (confirmed) {
+            form.submit();
+        }
+    });
+
+    return false;
+}
+
+

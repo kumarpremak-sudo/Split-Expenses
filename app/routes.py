@@ -274,8 +274,8 @@ def add_expense(group_uuid):
         flash('Invalid amount or payer selection.', 'error')
         return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
 
-    if amount <= 0:
-        flash('Amount must be greater than 0.', 'error')
+    if amount < 0.01 or amount > 1_000_000_000:
+        flash('Amount must be between 0.01 and 1,000,000,000.', 'error')
         return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
 
     group_member_ids = {m.id for m in group.members}
