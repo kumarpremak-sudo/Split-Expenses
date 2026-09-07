@@ -104,10 +104,10 @@ def index():
 
 @main_bp.route('/create', methods=['POST'])
 def create_group():
-    group_name = request.form.get('group_name', '').strip()
+    group_name = request.form.get('group_name', '').strip()[:100]
     currency = request.form.get('currency', 'INR').upper()
     pin = request.form.get('pin', '').strip()
-    creator_name = request.form.get('creator_name', '').strip()
+    creator_name = request.form.get('creator_name', '').strip()[:50]
 
     if not group_name or not pin or not creator_name:
         flash('Please fill in all fields.', 'error')
@@ -194,7 +194,7 @@ def join_set_name(group_uuid):
         return redirect(url_for('main.join_group'))
 
     if request.method == 'POST':
-        member_name = request.form.get('member_name', '').strip()
+        member_name = request.form.get('member_name', '').strip()[:50]
 
         if not member_name:
             flash('Please enter your name.', 'error')
