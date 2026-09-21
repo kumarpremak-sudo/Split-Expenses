@@ -1849,85 +1849,107 @@ a:hover {
 .section-card:nth-child(3) { animation-delay: 200ms; }
 .section-card:nth-child(4) { animation-delay: 300ms; }
 
-/* --- Modernized Settlements Flow Grid & Compact Balances Table --- */
-.settlements-flow-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--space-md);
+/* --- Modernized Settlements View & Action Bar --- */
+.settlement-header-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 8px;
 }
 
-.flow-card {
+.settlement-actions-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* --- Who Pays Whom Transfer Cards --- */
+.settlements-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.settlement-transfer-card {
     background: var(--color-bg);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
-    padding: 0.85rem 1rem;
-    display: flex;
+    padding: 12px 18px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    gap: 16px;
     transition: transform var(--transition-fast), border-color var(--transition-fast);
 }
 
-.flow-card:hover {
+.settlement-transfer-card:hover {
     border-color: var(--color-primary-light);
     transform: translateY(-2px);
 }
 
-.flow-person {
+.transfer-party {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 4px;
-    min-width: 60px;
+    gap: 10px;
+    min-width: 0;
 }
 
-.flow-avatar {
-    width: 32px;
-    height: 32px;
+.creditor-party {
+    justify-content: flex-end;
+}
+
+.party-avatar {
+    width: 36px;
+    height: 36px;
     border-radius: var(--radius-full);
-    background: var(--color-negative);
     color: white;
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+}
+
+.avatar-debtor {
+    background: var(--color-negative);
 }
 
 .avatar-creditor {
     background: var(--color-positive);
 }
 
-.flow-name {
-    font-size: 0.8rem;
+.party-name {
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--color-text);
-    text-align: center;
-    max-width: 80px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.flow-arrow-container {
-    flex: 1;
+.transfer-arrow-block {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 2px;
+    min-width: 130px;
 }
 
-.flow-amount-badge {
+.transfer-amount-pill {
     background: var(--color-primary-bg);
     color: var(--color-primary-light);
     border: 1px solid rgba(13, 148, 136, 0.3);
     border-radius: var(--radius-full);
-    padding: 2px 10px;
-    font-size: 0.82rem;
+    padding: 4px 14px;
+    font-size: 0.9rem;
     font-weight: 700;
+    white-space: nowrap;
 }
 
-.flow-line-arrow {
+.transfer-line {
     width: 100%;
     height: 2px;
     background: linear-gradient(90deg, var(--color-negative), var(--color-positive));
@@ -1935,7 +1957,7 @@ a:hover {
     margin: 4px 0;
 }
 
-.flow-arrow-head {
+.transfer-head {
     position: absolute;
     right: -4px;
     top: -8px;
@@ -1944,140 +1966,200 @@ a:hover {
     font-weight: bold;
 }
 
-.flow-pays-text {
-    font-size: 0.68rem;
+.transfer-label {
+    font-size: 0.65rem;
     color: var(--color-text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
+    font-weight: 600;
 }
 
-/* --- Compact Balances Data Table --- */
-.compact-balances-table {
+/* Mobile fine-tuning for Transfer Cards & Action Bar */
+@media (max-width: 540px) {
+    .settlement-transfer-card {
+        padding: 10px 10px;
+        gap: 6px;
+    }
+    .transfer-party {
+        gap: 6px;
+    }
+    .party-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 0.8rem;
+    }
+    .party-name {
+        font-size: 0.85rem;
+    }
+    .transfer-arrow-block {
+        min-width: 85px;
+    }
+    .transfer-amount-pill {
+        padding: 3px 8px;
+        font-size: 0.78rem;
+    }
+    .settlement-actions-bar {
+        width: 100%;
+    }
+    .settlement-actions-bar .btn {
+        flex: 1;
+    }
+}
+
+/* --- Balances Data Table --- */
+.table-scroll-container {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    margin-top: 8px;
+}
+
+.balances-data-table {
     width: 100%;
     border-collapse: collapse;
     font-size: var(--font-size-sm);
+    min-width: 500px;
 }
 
-.compact-balances-table th,
-.compact-balances-table td {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--color-border);
-}
-
-.compact-balances-table th {
+.balances-data-table th {
+    background: rgba(51, 65, 85, 0.5);
     color: var(--color-text-secondary);
-    font-weight: 600;
+    font-weight: 700;
     font-size: var(--font-size-xs);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    padding: 12px 18px;
+    border-bottom: 2px solid var(--color-border);
 }
 
-.compact-balances-table tbody tr:last-child td {
+.balances-data-table td {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.9rem;
+}
+
+.balances-data-table tr:last-child td {
     border-bottom: none;
 }
 
-.compact-balances-table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.02);
+.balances-data-table tr:hover {
+    background: rgba(255, 255, 255, 0.03);
 }
 
-.member-name-cell {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.col-member {
+    text-align: left;
 }
 
-.member-dot {
+.col-numeric {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.val-muted {
+    color: var(--color-text-secondary);
+}
+
+.status-dot {
+    display: inline-block;
     width: 8px;
     height: 8px;
     border-radius: var(--radius-full);
-    flex-shrink: 0;
+    margin-right: 8px;
+    vertical-align: middle;
 }
 
 .dot-positive { background: var(--color-positive); }
 .dot-negative { background: var(--color-negative); }
 .dot-zero { background: var(--color-text-muted); }
 
-.net-balance-cell {
-    font-weight: 700;
+/* --- High-contrast Entry Type Tabs --- */
+.entry-type-btn {
+    transition: all var(--transition-fast);
 }
 
-/* --- PDF Print Stylesheet (@media print) --- */
-.print-only {
-    display: none;
+.entry-type-btn.active {
+    background: var(--color-primary) !important;
+    color: white !important;
+    border-color: var(--color-primary) !important;
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
 }
 
+.entry-type-btn.btn-outline {
+    background: transparent !important;
+    color: var(--color-text-secondary) !important;
+    border-color: var(--color-border) !important;
+}
+
+.entry-type-btn.btn-outline:hover {
+    color: var(--color-text) !important;
+    border-color: var(--color-primary-light) !important;
+}
+
+/* --- PDF Print Stylesheet --- */
 @media print {
     body {
         background: white !important;
         color: black !important;
-        font-size: 12pt;
+        font-size: 11pt !important;
     }
 
     .app-header,
     .app-footer,
     .back-link,
-    .settlement-action-buttons,
+    .settlement-actions-bar,
     .settle-cta,
     .offline-banner,
-    .custom-modal-backdrop,
-    #settlements-section,
-    #balance-breakdown,
-    #total-overview,
-    .settlement-header {
+    .custom-modal-backdrop {
         display: none !important;
     }
 
-    .print-only {
-        display: block !important;
-        padding: 20px;
+    .main-content {
+        padding: 0 !important;
     }
 
-    .print-header {
-        text-align: center;
-        border-bottom: 2px solid #333;
-        padding-bottom: 12px;
-        margin-bottom: 20px;
+    .section-card {
+        background: white !important;
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+        color: black !important;
+        margin-bottom: 16px !important;
+        padding: 16px !important;
     }
 
-    .print-header h1 {
-        font-size: 18pt;
-        margin-bottom: 4px;
+    .section-title, .page-title, .stat-value {
+        color: black !important;
     }
 
-    .print-header h2 {
-        font-size: 14pt;
-        color: #555;
+    .settlement-transfer-card {
+        background: #f9f9f9 !important;
+        border: 1px solid #ddd !important;
+        color: black !important;
     }
 
-    .print-section {
-        margin-bottom: 20px;
+    .party-name, .member-name-text {
+        color: black !important;
     }
 
-    .print-section h3 {
-        font-size: 13pt;
-        border-bottom: 1px solid #ccc;
-        padding-bottom: 4px;
-        margin-bottom: 8px;
+    .transfer-amount-pill {
+        background: #e2e8f0 !important;
+        color: black !important;
+        border-color: #cbd5e1 !important;
     }
 
-    .print-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 10pt;
+    .balances-data-table th {
+        background: #f1f5f9 !important;
+        color: black !important;
+        border-bottom: 2px solid #64748b !important;
     }
 
-    .print-table td,
-    .print-table th {
-        padding: 6px 8px;
+    .balances-data-table td {
+        border-bottom: 1px solid #e2e8f0 !important;
+        color: black !important;
     }
 
-    .print-border td,
-    .print-border th {
-        border: 1px solid #ddd;
-    }
-
-    .print-border th {
-        background: #f2f2f2;
+    .val-muted {
+        color: #475569 !important;
     }
 }
 

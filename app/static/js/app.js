@@ -261,12 +261,6 @@ function switchExpenseType(type) {
  * Export Settlement report as PDF / Print preview document.
  */
 function exportSettlementPdf() {
-    const printDate = document.getElementById('print-date');
-    if (printDate) {
-        printDate.textContent = new Date().toLocaleDateString(undefined, {
-            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-        });
-    }
     window.print();
 }
 
@@ -286,13 +280,13 @@ function copySettlementSummary() {
     if (totalSpent) text += `• Total Spent: ${totalSpent.textContent.trim()}\n`;
     if (perPerson) text += `• Per Person Share: ${perPerson.textContent.trim()}\n`;
 
-    const flowCards = document.querySelectorAll('.flow-card');
+    const cards = document.querySelectorAll('.settlement-transfer-card');
     text += `\n💸 *Who Pays Whom*\n`;
-    if (flowCards.length > 0) {
-        flowCards.forEach(function (card, idx) {
-            const debtor = card.querySelector('.debtor .flow-name');
-            const creditor = card.querySelector('.creditor .flow-name');
-            const amount = card.querySelector('.flow-amount-badge');
+    if (cards.length > 0) {
+        cards.forEach(function (card, idx) {
+            const debtor = card.querySelector('.debtor-party .party-name');
+            const creditor = card.querySelector('.creditor-party .party-name');
+            const amount = card.querySelector('.transfer-amount-pill');
             if (debtor && creditor && amount) {
                 text += `${idx + 1}. *${debtor.textContent.trim()}* ➔ *${creditor.textContent.trim()}*: ${amount.textContent.trim()}\n`;
             }
@@ -301,7 +295,7 @@ function copySettlementSummary() {
         text += `Everyone is settled up! No payments needed. ✅\n`;
     }
 
-    const rows = document.querySelectorAll('.compact-balances-table tbody tr');
+    const rows = document.querySelectorAll('.balances-data-table tbody tr');
     if (rows.length > 0) {
         text += `\n👤 *Individual Balances*\n`;
         rows.forEach(function (row) {
