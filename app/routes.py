@@ -103,6 +103,19 @@ def index():
 #  Create Group
 # ───────────────────────────────────────────
 
+def _is_group_creator(group, current_member):
+    """Determine if current session member is the creator of the group."""
+    if not current_member or not current_member.get('member_id'):
+        return False
+    member_id = current_member.get('member_id')
+    if group.created_by_member_id:
+        return group.created_by_member_id == member_id
+    if group.members:
+        first_member_id = min(m.id for m in group.members)
+        return first_member_id == member_id
+    return False
+
+
 @main_bp.route('/create', methods=['POST'])
 def create_group():
     group_name = request.form.get('group_name', '').strip()[:100]
@@ -141,6 +154,7 @@ def create_group():
     db.session.add(creator)
     db.session.flush()
 
+    group.created_by_member_id = creator.id
     db.session.commit()
 
     session[_get_session_key(group.uuid)] = {
@@ -239,6 +253,7 @@ def group_dashboard(group_uuid):
     group = _get_group_or_404(group_uuid)
     currency_symbol = _get_currency_symbol(group.currency)
     current_member = _get_current_member(group_uuid)
+    is_creator = _is_group_creator(group, current_member)
 
     return render_template(
         'group.html',
@@ -246,6 +261,7 @@ def group_dashboard(group_uuid):
         currency_symbol=currency_symbol,
         categories=CATEGORIES,
         current_member=current_member,
+        is_creator=is_creator,
     )
 
 
@@ -330,17 +346,36 @@ def add_expense(group_uuid):
         flash('Please select at least one member to share or contribute.', 'error')
         return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
 
+    # Submission Debounce Check (2 seconds threshold for same amount & description)
+    from time import time
+    now = time()
+    debounce_key = f'last_exp_{group.uuid}'
+    last_exp = session.get(debounce_key)
+    rounded_amt = round(amount, 2)
+    clean_desc = description[:200]
+
+    if last_exp and (now - last_exp.get('time', 0)) < 2.0:
+        if last_exp.get('amount') == rounded_amt and last_exp.get('desc') == clean_desc:
+            # Duplicate submit intercepted within 2s — silently redirect back to dashboard
+            return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
+
     expense = Expense(
         group_id=group.id,
         paid_by_id=paid_by_id,
-        amount=round(amount, 2),
-        description=description[:200],
+        amount=rounded_amt,
+        description=clean_desc,
         category=category,
         entry_type=entry_type,
         split_among=json.dumps(valid_split_ids),
     )
     db.session.add(expense)
     db.session.commit()
+
+    session[debounce_key] = {
+        'time': now,
+        'amount': rounded_amt,
+        'desc': clean_desc,
+    }
 
     return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
 
@@ -452,8 +487,13 @@ def leave_group(group_uuid):
 @require_group_access
 def delete_group(group_uuid):
     group = _get_group_or_404(group_uuid)
-    group_name = group.name
+    current_member = _get_current_member(group_uuid)
 
+    if not _is_group_creator(group, current_member):
+        flash('Only the group creator can delete this group.', 'error')
+        return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
+
+    group_name = group.name
     db.session.delete(group)
     db.session.commit()
 

@@ -36,4 +36,24 @@ def create_app(config_name='development'):
         except Exception:
             pass
 
+        try:
+            with db.engine.connect() as conn:
+                conn.execute(db.text("ALTER TABLE groups ADD COLUMN created_by_member_id INTEGER REFERENCES members(id)"))
+                conn.commit()
+        except Exception:
+            pass
+
+        try:
+            with db.engine.connect() as conn:
+                conn.execute(db.text("""
+                    UPDATE groups 
+                    SET created_by_member_id = (
+                        SELECT id FROM members WHERE members.group_id = groups.id ORDER BY id ASC LIMIT 1
+                    )
+                    WHERE created_by_member_id IS NULL
+                """))
+                conn.commit()
+        except Exception:
+            pass
+
     return app

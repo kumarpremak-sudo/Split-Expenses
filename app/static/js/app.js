@@ -343,6 +343,8 @@ function selectMemberChip(element) {
     if (!element) return;
     const name = element.dataset.memberName;
     const nameInput = document.getElementById('member-name');
+    const submitBtn = document.getElementById('join-name-submit');
+
     if (nameInput && name) {
         nameInput.value = name;
         nameInput.focus();
@@ -354,6 +356,10 @@ function selectMemberChip(element) {
     });
 
     element.classList.add('active');
+
+    if (submitBtn && name) {
+        submitBtn.innerHTML = `🔑 Enter Group as ${name}`;
+    }
 }
 
 /* Backward compatibility alias */
@@ -370,32 +376,76 @@ document.addEventListener('DOMContentLoaded', function () {
         cb.addEventListener('change', syncSelectAll);
     });
 
-    const addExpenseForm = document.getElementById('add-expense-form');
-    if (addExpenseForm) {
-        addExpenseForm.addEventListener('submit', function (e) {
-            const checkboxes = addExpenseForm.querySelectorAll('.member-checkbox');
-            const checkedCount = Array.from(checkboxes).filter(function (cb) { return cb.checked; }).length;
-            if (checkboxes.length > 0 && checkedCount === 0) {
+    // Form Double-Submit Prevention Locking
+    const formsToLock = document.querySelectorAll('#add-expense-form, #add-member-form, #create-group-form, #join-group-form, #set-name-form');
+    formsToLock.forEach(function (form) {
+        form.addEventListener('submit', function (e) {
+            const submitBtn = form.querySelector('button[type="submit"], input[type="submit"]');
+
+            if (form.checkValidity && !form.checkValidity()) {
+                return;
+            }
+
+            if (form.id === 'add-expense-form') {
+                const checkboxes = form.querySelectorAll('.member-checkbox');
+                const checkedCount = Array.from(checkboxes).filter(function (cb) { return cb.checked; }).length;
+                if (checkboxes.length > 0 && checkedCount === 0) {
+                    e.preventDefault();
+                    alert('Please select at least one member to share or contribute.');
+                    return;
+                }
+            }
+
+            if (form.dataset.submitting === 'true') {
                 e.preventDefault();
-                alert('Please select at least one member to share or contribute.');
+                return;
+            }
+
+            form.dataset.submitting = 'true';
+
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                const origText = submitBtn.innerHTML;
+                submitBtn.innerHTML = `⏳ Saving...`;
+                // Fallback unlock after 8s in case of validation interruption
+                setTimeout(function () {
+                    form.dataset.submitting = 'false';
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origText;
+                }, 8000);
             }
         });
-    }
+    });
 
     // Auto-highlight member chip if user types a matching name manually
     const nameInput = document.getElementById('member-name');
+    const joinSubmitBtn = document.getElementById('join-name-submit');
     if (nameInput) {
         nameInput.addEventListener('input', function () {
-            const currentVal = nameInput.value.trim().toLowerCase();
+            const currentVal = nameInput.value.trim();
+            const lowerVal = currentVal.toLowerCase();
             const chips = document.querySelectorAll('.selectable-member-chip');
+            let matchedName = null;
+
             chips.forEach(function (chip) {
-                const chipName = (chip.dataset.memberName || '').trim().toLowerCase();
-                if (chipName === currentVal && currentVal !== '') {
+                const chipName = (chip.dataset.memberName || '').trim();
+                if (chipName.toLowerCase() === lowerVal && lowerVal !== '') {
                     chip.classList.add('active');
+                    matchedName = chipName;
                 } else {
                     chip.classList.remove('active');
                 }
             });
+
+            if (joinSubmitBtn) {
+                if (matchedName) {
+                    joinSubmitBtn.innerHTML = `🔑 Enter Group as ${matchedName}`;
+                } else if (currentVal !== '') {
+                    joinSubmitBtn.innerHTML = `🎉 Join as New Member`;
+                } else {
+                    joinSubmitBtn.innerHTML = `🎉 Join Group`;
+                }
+            }
         });
     }
 });

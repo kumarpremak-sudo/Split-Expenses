@@ -14,9 +14,10 @@ class Group(db.Model):
     name = db.Column(db.String(100), nullable=False)
     currency = db.Column(db.String(3), nullable=False, default='INR')
     pin_hash = db.Column(db.String(256), nullable=False)
+    created_by_member_id = db.Column(db.Integer, db.ForeignKey('members.id', use_alter=True, name='fk_groups_created_by'), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
-    members = db.relationship('Member', backref='group', lazy=True, cascade='all, delete-orphan')
+    members = db.relationship('Member', backref='group', lazy=True, cascade='all, delete-orphan', foreign_keys='Member.group_id')
     expenses = db.relationship('Expense', backref='group', lazy=True, cascade='all, delete-orphan')
 
     def set_pin(self, pin):
@@ -31,6 +32,7 @@ class Group(db.Model):
             'uuid': self.uuid,
             'name': self.name,
             'currency': self.currency,
+            'created_by_member_id': self.created_by_member_id,
             'created_at': self.created_at.isoformat(),
             'members': [m.to_dict() for m in self.members],
             'expenses': [e.to_dict() for e in self.expenses],

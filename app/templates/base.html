@@ -23,11 +23,22 @@
 </head>
 <body>
     <header class="app-header">
-        <div class="container">
-            <a href="{{ url_for('main.index') }}" class="logo" id="nav-logo">
-                <span class="logo-icon">💰</span>
-                <span class="logo-text">Split<span class="logo-highlight">Exp</span></span>
-            </a>
+        <div class="container" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                {% if group is defined and group and request.endpoint != 'main.group_dashboard' %}
+                <a href="{{ url_for('main.group_dashboard', group_uuid=group.uuid) }}" class="btn btn-outline btn-sm" id="header-back-btn" style="padding: 4px 10px; font-weight: 600;">
+                    ← Back
+                </a>
+                {% elif request.endpoint not in ['main.index', None] %}
+                <a href="{{ url_for('main.index') }}" class="btn btn-outline btn-sm" id="header-home-btn" style="padding: 4px 10px; font-weight: 600;">
+                    🏠 Home
+                </a>
+                {% endif %}
+                <a href="{{ url_for('main.index') }}" class="logo" id="nav-logo">
+                    <span class="logo-icon">💰</span>
+                    <span class="logo-text">Split<span class="logo-highlight">Exp</span></span>
+                </a>
+            </div>
             <button class="install-btn" id="install-btn" style="display: none;">
                 <span class="install-icon">📲</span> Install App
             </button>
