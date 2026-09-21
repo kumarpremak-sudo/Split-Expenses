@@ -24,13 +24,21 @@
 <body>
     <header class="app-header">
         <div class="container" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                {% if group is defined and group and request.endpoint != 'main.group_dashboard' %}
+            <div style="display: flex; align-items: center; gap: 10px;">
+                {% if request.endpoint == 'main.group_dashboard' %}
+                <a href="{{ url_for('main.index') }}" class="btn btn-outline btn-sm" id="header-home-btn" style="padding: 4px 10px; font-weight: 600;">
+                    🏠 Home
+                </a>
+                {% elif request.endpoint == 'main.settle' and group is defined and group %}
                 <a href="{{ url_for('main.group_dashboard', group_uuid=group.uuid) }}" class="btn btn-outline btn-sm" id="header-back-btn" style="padding: 4px 10px; font-weight: 600;">
                     ← Back
                 </a>
-                {% elif request.endpoint not in ['main.index', None] %}
-                <a href="{{ url_for('main.index') }}" class="btn btn-outline btn-sm" id="header-home-btn" style="padding: 4px 10px; font-weight: 600;">
+                {% elif request.endpoint in ['main.join_group', 'main.join_set_name'] %}
+                <a href="{{ url_for('main.index') }}" class="btn btn-outline btn-sm" id="header-back-home-btn" style="padding: 4px 10px; font-weight: 600;">
+                    🏠 Home
+                </a>
+                {% elif request.endpoint != 'main.index' %}
+                <a href="{{ url_for('main.index') }}" class="btn btn-outline btn-sm" id="header-default-back-btn" style="padding: 4px 10px; font-weight: 600;">
                     🏠 Home
                 </a>
                 {% endif %}
