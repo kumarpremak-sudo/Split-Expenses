@@ -38,6 +38,9 @@ def calculate_settlements(members, expenses):
         if payer_id not in valid_member_ids:
             continue
 
+        if not expense.amount:
+            continue
+
         exp_cents = int(round(expense.amount * 100))
         if exp_cents <= 0:
             continue
@@ -58,18 +61,30 @@ def calculate_settlements(members, expenses):
         if not valid_split_ids:
             continue
 
-        total_spent_cents += exp_cents
-        paid_cents[payer_id] += exp_cents
+        entry_type = getattr(expense, 'entry_type', None) or 'expense'
 
-        # Exact integer split with cent-remainder allocation
         num_split = len(valid_split_ids)
         base_share = exp_cents // num_split
         remainder = exp_cents % num_split
 
-        for idx, mid in enumerate(valid_split_ids):
-            # Distribute remainder 1-cent to first 'remainder' members
-            extra = 1 if idx < remainder else 0
-            owed_cents[mid] += (base_share + extra)
+        if entry_type == 'advance':
+            # Advance Collection / Deposit:
+            # payer_id is the collector/treasurer who received/holds the advance money.
+            # valid_split_ids are the members who contributed/paid the advance.
+            for idx, mid in enumerate(valid_split_ids):
+                extra = 1 if idx < remainder else 0
+                paid_cents[mid] += (base_share + extra)
+
+            # Debit collector for holding the pool funds in hand
+            paid_cents[payer_id] -= exp_cents
+        else:
+            # Regular Group Expense:
+            total_spent_cents += exp_cents
+            paid_cents[payer_id] += exp_cents
+
+            for idx, mid in enumerate(valid_split_ids):
+                extra = 1 if idx < remainder else 0
+                owed_cents[mid] += (base_share + extra)
 
     member_balances = []
     max_abs_net_cents = 0

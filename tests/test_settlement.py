@@ -13,10 +13,11 @@ class MockMember:
 
 
 class MockExpense:
-    def __init__(self, paid_by_id, amount, split_among):
+    def __init__(self, paid_by_id, amount, split_among, entry_type='expense'):
         self.paid_by_id = paid_by_id
         self.amount = amount
         self.split_among = json.dumps(split_among) if isinstance(split_among, list) else split_among
+        self.entry_type = entry_type
 
 
 class TestSettlementLogic(unittest.TestCase):
@@ -109,6 +110,83 @@ class TestSettlementLogic(unittest.TestCase):
         self.assertEqual(res['total_spent'], 0.0)
         self.assertEqual(len(res['settlements']), 0)
 
+    def test_advance_collection_equal(self):
+        """Test Alice collecting $1,000 advance from Alice, Bob, Charlie, David ($4,000 total)."""
+        e1 = MockExpense(1, 4000.0, [1, 2, 3, 4], entry_type='advance')
+        res = calculate_settlements(self.members, [e1])
+
+        # Advance collection must NOT inflate total group spending
+        self.assertEqual(res['total_spent'], 0.0)
+
+        balances = {b['id']: b for b in res['balances']}
+        self.assertEqual(balances[1]['net'], -3000.0)  # Alice holds $3,000 pool cash
+        self.assertEqual(balances[2]['net'], 1000.0)   # Bob pre-paid $1,000
+        self.assertEqual(balances[3]['net'], 1000.0)   # Charlie pre-paid $1,000
+        self.assertEqual(balances[4]['net'], 1000.0)   # David pre-paid $1,000
+
+        # Alice pays back Bob, Charlie, and David $1,000 each
+        self.assertEqual(len(res['settlements']), 3)
+        for s in res['settlements']:
+            self.assertEqual(s['from_id'], 1)  # From Alice
+            self.assertEqual(s['amount'], 1000.0)
+
+    def test_advance_collection_followed_by_group_expense(self):
+        """Test $4,000 advance collection followed by $2,000 Food expense paid by Alice from pool."""
+        adv = MockExpense(1, 4000.0, [1, 2, 3, 4], entry_type='advance')
+        food = MockExpense(1, 2000.0, [1, 2, 3, 4], entry_type='expense')
+        res = calculate_settlements(self.members, [adv, food])
+
+        # Total spent should only count actual expense ($2,000.00)
+        self.assertEqual(res['total_spent'], 2000.0)
+
+        balances = {b['id']: b for b in res['balances']}
+        # Fair share per person = $500
+        # Bob, Charlie, David contributed $1,000 advance - $500 fair share = +$500 net
+        self.assertEqual(balances[2]['net'], 500.0)
+        self.assertEqual(balances[3]['net'], 500.0)
+        self.assertEqual(balances[4]['net'], 500.0)
+
+        # Alice held $3,000 cash - spent $2,000 + $500 fair share = -$1,500 net
+        self.assertEqual(balances[1]['net'], -1500.0)
+
+    def test_partial_split_exclusion(self):
+        """Test expense paid by Alice ($150) split ONLY among Bob and Charlie (Alice excluded)."""
+        food = MockExpense(1, 150.0, [2, 3], entry_type='expense')
+        res = calculate_settlements([self.m1, self.m2, self.m3], [food])
+
+        self.assertEqual(res['total_spent'], 150.0)
+        balances = {b['id']: b for b in res['balances']}
+        self.assertEqual(balances[1]['paid'], 150.0)
+        self.assertEqual(balances[1]['owed'], 0.0)
+        self.assertEqual(balances[1]['net'], 150.0)
+        self.assertEqual(balances[2]['owed'], 75.0)
+        self.assertEqual(balances[2]['net'], -75.0)
+        self.assertEqual(balances[3]['owed'], 75.0)
+        self.assertEqual(balances[3]['net'], -75.0)
+
+        # Bob and Charlie pay Alice $75 each
+        self.assertEqual(len(res['settlements']), 2)
+        total_settlement = sum(s['amount'] for s in res['settlements'])
+        self.assertEqual(total_settlement, 150.0)
+
+    def test_zero_valid_splitters(self):
+        """Test expense with empty split list defaults to all valid group members."""
+        food = MockExpense(1, 100.0, [], entry_type='expense')
+        res = calculate_settlements([self.m1, self.m2], [food])
+
+        self.assertEqual(res['total_spent'], 100.0)
+        balances = {b['id']: b for b in res['balances']}
+        self.assertEqual(balances[1]['owed'], 50.0)
+    def test_null_amount_handled_gracefully(self):
+        """Test expense with None or 0 amount is skipped without crashing."""
+        e1 = MockExpense(1, None, [1, 2])
+        e2 = MockExpense(1, 0.0, [1, 2])
+        res = calculate_settlements([self.m1, self.m2], [e1, e2])
+
+        self.assertEqual(res['total_spent'], 0.0)
+        self.assertEqual(len(res['settlements']), 0)
+
 
 if __name__ == '__main__':
     unittest.main()
+

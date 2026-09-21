@@ -39,6 +39,7 @@ CATEGORIES = [
     'Shopping',
     'Medical',
     'Tips',
+    'Advance / Deposit',
     'Other',
 ]
 
@@ -249,7 +250,38 @@ def group_dashboard(group_uuid):
 
 
 # ───────────────────────────────────────────
-#  Expenses
+#  Members
+# ───────────────────────────────────────────
+
+@main_bp.route('/group/<group_uuid>/add-member', methods=['POST'])
+@require_group_access
+def add_member(group_uuid):
+    group = _get_group_or_404(group_uuid)
+    member_name = request.form.get('member_name', '').strip()[:50]
+
+    if not member_name:
+        flash('Please enter a valid member name.', 'error')
+        return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
+
+    existing = Member.query.filter(
+        Member.group_id == group.id,
+        db.func.lower(Member.name) == member_name.lower()
+    ).first()
+
+    if existing:
+        flash(f'A member named "{member_name}" is already in this group.', 'error')
+        return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
+
+    new_member = Member(group_id=group.id, name=member_name)
+    db.session.add(new_member)
+    db.session.commit()
+    flash(f'Member "{member_name}" added successfully.', 'success')
+
+    return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
+
+
+# ───────────────────────────────────────────
+#  Expenses & Advance Collection
 # ───────────────────────────────────────────
 
 @main_bp.route('/group/<group_uuid>/add-expense', methods=['POST'])
@@ -261,6 +293,13 @@ def add_expense(group_uuid):
     amount_raw = request.form.get('amount')
     description = request.form.get('description', '').strip()
     category = request.form.get('category', 'Other')
+    entry_type = request.form.get('entry_type', 'expense').strip().lower()
+    if entry_type not in ('expense', 'advance'):
+        entry_type = 'expense'
+
+    if entry_type == 'advance' and category == 'Other':
+        category = 'Advance / Deposit'
+
     split_among_raw = request.form.getlist('split_among')
 
     if not all([paid_by_raw, amount_raw, description]):
@@ -288,7 +327,8 @@ def add_expense(group_uuid):
     valid_split_ids = [sid for sid in split_ids if sid in group_member_ids]
 
     if not valid_split_ids:
-        valid_split_ids = list(group_member_ids)
+        flash('Please select at least one member to share or contribute.', 'error')
+        return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
 
     expense = Expense(
         group_id=group.id,
@@ -296,6 +336,7 @@ def add_expense(group_uuid):
         amount=round(amount, 2),
         description=description[:200],
         category=category,
+        entry_type=entry_type,
         split_among=json.dumps(valid_split_ids),
     )
     db.session.add(expense)
@@ -314,6 +355,10 @@ def edit_expense(group_uuid, expense_id):
     amount_raw = request.form.get('amount')
     description = request.form.get('description', '').strip()
     category = request.form.get('category', 'Other')
+    entry_type = request.form.get('entry_type', getattr(expense, 'entry_type', 'expense')).strip().lower()
+    if entry_type not in ('expense', 'advance'):
+        entry_type = 'expense'
+
     split_among_raw = request.form.getlist('split_among')
 
     if not all([paid_by_raw, amount_raw, description]):
@@ -328,7 +373,7 @@ def edit_expense(group_uuid, expense_id):
         return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
 
     if amount < 0.01 or amount > 1_000_000_000:
-        flash('Amount must be positive.', 'error')
+        flash('Amount must be between 0.01 and 1,000,000,000.', 'error')
         return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
 
     group_member_ids = {m.id for m in group.members}
@@ -340,12 +385,14 @@ def edit_expense(group_uuid, expense_id):
     valid_split_ids = [sid for sid in split_ids if sid in group_member_ids]
 
     if not valid_split_ids:
-        valid_split_ids = list(group_member_ids)
+        flash('Please select at least one member to share or contribute.', 'error')
+        return redirect(url_for('main.group_dashboard', group_uuid=group.uuid))
 
     expense.paid_by_id = paid_by_id
     expense.amount = round(amount, 2)
     expense.description = description[:200]
     expense.category = category
+    expense.entry_type = entry_type
     expense.split_among = json.dumps(valid_split_ids)
 
     db.session.commit()

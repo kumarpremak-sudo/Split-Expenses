@@ -107,7 +107,7 @@ function syncSelectAll(event) {
     const form = target.closest('form');
     if (!form) return;
 
-    const selectAll = form.querySelector('#select-all-members');
+    const selectAll = form.querySelector('.select-all-checkbox');
     const checkboxes = form.querySelectorAll('.member-checkbox');
     if (!selectAll || checkboxes.length === 0) return;
 
@@ -115,6 +115,22 @@ function syncSelectAll(event) {
         return cb.checked;
     });
     selectAll.checked = allChecked;
+}
+
+/**
+ * Toggle the Add Member inline form on the Group Dashboard.
+ */
+function toggleAddMemberForm() {
+    const panel = document.getElementById('add-member-panel');
+    if (!panel) return;
+
+    if (panel.style.display === 'none' || !panel.style.display) {
+        panel.style.display = 'block';
+        const input = document.getElementById('new-member-name');
+        if (input) input.focus();
+    } else {
+        panel.style.display = 'none';
+    }
 }
 
 /* --- PWA Install Prompt --- */
@@ -184,6 +200,136 @@ function switchLandingTab(tabName) {
     }
 }
 
+/* --- Switch Entry Type (Expense vs Advance Collection) --- */
+function switchExpenseType(type) {
+    const expenseTab = document.getElementById('tab-type-expense');
+    const advanceTab = document.getElementById('tab-type-advance');
+    const hiddenType = document.getElementById('form-entry-type');
+
+    const payerLabel = document.getElementById('payer-label');
+    const descLabel = document.getElementById('description-label');
+    const descInput = document.getElementById('expense-description');
+    const splitLabel = document.getElementById('split-label');
+    const submitBtn = document.getElementById('add-expense-submit');
+    const categorySelect = document.getElementById('expense-category');
+
+    if (!expenseTab || !advanceTab || !hiddenType) return;
+
+    if (type === 'advance') {
+        advanceTab.classList.add('active');
+        advanceTab.classList.remove('btn-outline');
+        expenseTab.classList.remove('active');
+        expenseTab.classList.add('btn-outline');
+        hiddenType.value = 'advance';
+
+        if (payerLabel) payerLabel.textContent = 'Collector / Treasurer';
+        if (descLabel) descLabel.textContent = 'Description';
+        if (descInput) descInput.placeholder = 'e.g., Advance collected from members';
+        if (splitLabel) splitLabel.textContent = 'Collected From';
+        if (submitBtn) submitBtn.innerHTML = '💵 Add Advance Collection';
+
+        if (categorySelect) {
+            for (let i = 0; i < categorySelect.options.length; i++) {
+                if (categorySelect.options[i].value === 'Advance / Deposit') {
+                    categorySelect.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+    } else {
+        expenseTab.classList.add('active');
+        expenseTab.classList.remove('btn-outline');
+        advanceTab.classList.remove('active');
+        advanceTab.classList.add('btn-outline');
+        hiddenType.value = 'expense';
+
+        if (payerLabel) payerLabel.textContent = 'Paid By';
+        if (descLabel) descLabel.textContent = 'Description';
+        if (descInput) descInput.placeholder = 'e.g., Lunch at hotel';
+        if (splitLabel) splitLabel.textContent = 'Split Among';
+        if (submitBtn) submitBtn.innerHTML = '💰 Add Expense';
+
+        if (categorySelect) {
+            if (categorySelect.value === 'Advance / Deposit') {
+                categorySelect.selectedIndex = 0;
+            }
+        }
+    }
+}
+
+/**
+ * Export Settlement report as PDF / Print preview document.
+ */
+function exportSettlementPdf() {
+    const printDate = document.getElementById('print-date');
+    if (printDate) {
+        printDate.textContent = new Date().toLocaleDateString(undefined, {
+            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+    }
+    window.print();
+}
+
+/**
+ * Copy formatted settlement summary text to clipboard for WhatsApp/SMS sharing.
+ */
+function copySettlementSummary() {
+    const btn = document.getElementById('copy-summary-btn');
+
+    const subtitleEl = document.querySelector('.page-subtitle');
+    const totalSpent = document.getElementById('total-spent-value');
+    const perPerson = document.getElementById('per-person-value');
+
+    let text = `⚖️ *Split Expenses Settlement Report*\n`;
+    if (subtitleEl) text += `${subtitleEl.textContent.trim()}\n`;
+    text += `\n📊 *Overview*\n`;
+    if (totalSpent) text += `• Total Spent: ${totalSpent.textContent.trim()}\n`;
+    if (perPerson) text += `• Per Person Share: ${perPerson.textContent.trim()}\n`;
+
+    const flowCards = document.querySelectorAll('.flow-card');
+    text += `\n💸 *Who Pays Whom*\n`;
+    if (flowCards.length > 0) {
+        flowCards.forEach(function (card, idx) {
+            const debtor = card.querySelector('.debtor .flow-name');
+            const creditor = card.querySelector('.creditor .flow-name');
+            const amount = card.querySelector('.flow-amount-badge');
+            if (debtor && creditor && amount) {
+                text += `${idx + 1}. *${debtor.textContent.trim()}* ➔ *${creditor.textContent.trim()}*: ${amount.textContent.trim()}\n`;
+            }
+        });
+    } else {
+        text += `Everyone is settled up! No payments needed. ✅\n`;
+    }
+
+    const rows = document.querySelectorAll('.compact-balances-table tbody tr');
+    if (rows.length > 0) {
+        text += `\n👤 *Individual Balances*\n`;
+        rows.forEach(function (row) {
+            const name = row.querySelector('.member-name-text');
+            const net = row.querySelector('.net-balance-cell');
+            if (name && net) {
+                text += `• ${name.textContent.trim()}: ${net.textContent.trim()}\n`;
+            }
+        });
+    }
+
+    text += `\nOpen app: ${window.location.href}`;
+
+    navigator.clipboard.writeText(text).then(function () {
+        if (!btn) return;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '✅ Copied!';
+        btn.classList.add('btn-accent');
+
+        setTimeout(function () {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-accent');
+        }, 2000);
+    }).catch(function () {
+        prompt('Copy this settlement summary text:', text);
+    });
+}
+
 /* --- Expense Edit Toggle --- */
 function toggleEditExpense(expenseId) {
     const panel = document.getElementById('edit-panel-' + expenseId);
@@ -229,6 +375,18 @@ document.addEventListener('DOMContentLoaded', function () {
     memberCheckboxes.forEach(function (cb) {
         cb.addEventListener('change', syncSelectAll);
     });
+
+    const addExpenseForm = document.getElementById('add-expense-form');
+    if (addExpenseForm) {
+        addExpenseForm.addEventListener('submit', function (e) {
+            const checkboxes = addExpenseForm.querySelectorAll('.member-checkbox');
+            const checkedCount = Array.from(checkboxes).filter(function (cb) { return cb.checked; }).length;
+            if (checkboxes.length > 0 && checkedCount === 0) {
+                e.preventDefault();
+                alert('Please select at least one member to share or contribute.');
+            }
+        });
+    }
 
     // Auto-highlight member chip if user types a matching name manually
     const nameInput = document.getElementById('member-name');

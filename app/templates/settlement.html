@@ -3,17 +3,29 @@
 
 {% block content %}
 <section class="settlement-header">
-    <a href="{{ url_for('main.group_dashboard', group_uuid=group.uuid) }}" class="back-link" id="back-to-group">
-        ← Back to {{ group.name }}
-    </a>
-    <h1 class="page-title">⚖️ Settlement</h1>
-    <p class="page-subtitle">{{ group.name }} · {{ currency_symbol }} {{ group.currency }}</p>
+    <div class="settlement-header-top" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+        <div>
+            <a href="{{ url_for('main.group_dashboard', group_uuid=group.uuid) }}" class="back-link" id="back-to-group">
+                ← Back to {{ group.name }}
+            </a>
+            <h1 class="page-title" style="margin-top: 4px;">⚖️ Settlement Summary</h1>
+            <p class="page-subtitle">{{ group.name }} · {{ currency_symbol }} {{ group.currency }}</p>
+        </div>
+        <div class="settlement-action-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-primary btn-sm" id="export-pdf-btn" onclick="exportSettlementPdf()" style="padding: 8px 14px; font-size: 0.85rem; font-weight: 600;">
+                📄 Export PDF
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" id="copy-summary-btn" onclick="copySettlementSummary()" style="padding: 8px 14px; font-size: 0.85rem; font-weight: 600;">
+                📋 Copy Text Summary
+            </button>
+        </div>
+    </div>
 </section>
 
 <!-- Total Overview -->
 <section class="section-card total-overview" id="total-overview">
     <div class="overview-stat">
-        <span class="stat-label">Total Group Spending</span>
+        <span class="stat-label">Total Group Spent</span>
         <span class="stat-value" id="total-spent-value">{{ currency_symbol }}{{ "%.2f"|format(total_spent) }}</span>
     </div>
     <div class="overview-stat">
@@ -21,7 +33,7 @@
         <span class="stat-value" id="member-count-value">{{ group.members|length }}</span>
     </div>
     <div class="overview-stat">
-        <span class="stat-label">Per Person (Equal Split)</span>
+        <span class="stat-label">Per Person (Share)</span>
         <span class="stat-value" id="per-person-value">
             {% if group.members|length > 0 %}
             {{ currency_symbol }}{{ "%.2f"|format(total_spent / group.members|length) }}
@@ -32,76 +44,154 @@
     </div>
 </section>
 
-<!-- Per-Person Breakdown -->
-<section class="section-card" id="balance-breakdown">
-    <h2 class="section-title">👤 Individual Balances</h2>
-    <div class="balance-cards">
-        {% for balance in balances %}
-        <div class="balance-card {% if balance.net > 0 %}balance-positive{% elif balance.net < 0 %}balance-negative{% else %}balance-zero{% endif %}"
-             id="balance-card-{{ balance.id }}">
-            <div class="balance-name">{{ balance.name }}</div>
-            <div class="balance-details">
-                <div class="balance-row">
-                    <span>Paid</span>
-                    <span class="balance-paid">{{ currency_symbol }}{{ "%.2f"|format(balance.paid) }}</span>
-                </div>
-                <div class="balance-row">
-                    <span>Fair Share</span>
-                    <span>{{ currency_symbol }}{{ "%.2f"|format(balance.owed) }}</span>
-                </div>
-                <div class="balance-row balance-net-row">
-                    <span>Net</span>
-                    <span class="balance-net {% if balance.net > 0 %}text-positive{% elif balance.net < 0 %}text-negative{% endif %}">
-                        {% if balance.net > 0 %}+{% endif %}{{ currency_symbol }}{{ "%.2f"|format(balance.net) }}
-                    </span>
-                </div>
-            </div>
-            <div class="balance-bar-track">
-                {% set abs_val = balance.net if balance.net >= 0 else -balance.net %}
-                {% set bar_width = (abs_val / max_abs_net * 100) if max_abs_net > 0 else 0 %}
-                <div class="balance-bar {% if balance.net > 0 %}bar-positive{% elif balance.net < 0 %}bar-negative{% endif %}" 
-                     style="width: {{ bar_width }}%"></div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</section>
-
-<!-- Settlement Transactions -->
+<!-- Section 1: Settlements / Who Pays Whom (First Priority for Users) -->
 <section class="section-card" id="settlements-section">
-    <h2 class="section-title">💸 Settlements</h2>
-    
+    <div class="section-header" style="margin-bottom: 12px;">
+        <h2 class="section-title">💸 Who Pays Whom</h2>
+        <span class="total-badge" style="font-size: 0.75rem;">
+            {{ settlements|length }} {% if settlements|length == 1 %}payment{% else %}payments{% endif %} needed
+        </span>
+    </div>
+
     {% if settlements %}
-    <p class="section-desc">Minimum transactions needed to settle all debts:</p>
-    <div class="settlement-list">
+    <p class="section-desc" style="margin-bottom: 14px;">Minimum transactions needed to settle all debts:</p>
+    <div class="settlements-flow-grid">
         {% for s in settlements %}
-        <div class="settlement-item" id="settlement-item-{{ loop.index }}">
-            <div class="settlement-from">
-                <span class="settlement-avatar">{{ s.from_name[0] }}</span>
-                <span class="settlement-name">{{ s.from_name }}</span>
+        <div class="flow-card" id="settlement-item-{{ loop.index }}">
+            <div class="flow-person debtor">
+                <span class="flow-avatar">{{ s.from_name[0] }}</span>
+                <span class="flow-name">{{ s.from_name }}</span>
             </div>
-            <div class="settlement-arrow">
-                <span class="arrow-amount">{{ currency_symbol }}{{ "%.2f"|format(s.amount) }}</span>
-                <div class="arrow-line">→</div>
+            <div class="flow-arrow-container">
+                <span class="flow-amount-badge">{{ currency_symbol }}{{ "%.2f"|format(s.amount) }}</span>
+                <div class="flow-line-arrow">
+                    <span class="flow-arrow-head">→</span>
+                </div>
+                <span class="flow-pays-text">pays</span>
             </div>
-            <div class="settlement-to">
-                <span class="settlement-avatar avatar-receiver">{{ s.to_name[0] }}</span>
-                <span class="settlement-name">{{ s.to_name }}</span>
+            <div class="flow-person creditor">
+                <span class="flow-avatar avatar-creditor">{{ s.to_name[0] }}</span>
+                <span class="flow-name">{{ s.to_name }}</span>
             </div>
         </div>
         {% endfor %}
     </div>
     {% else %}
-    <div class="empty-state" id="no-settlements-message">
-        <span class="empty-icon">✅</span>
-        <p>Everyone is settled up! No payments needed.</p>
+    <div class="empty-state" id="no-settlements-message" style="padding: 24px;">
+        <span class="empty-icon" style="font-size: 2.2rem;">✅</span>
+        <p style="font-weight: 600; color: var(--color-positive); margin-top: 8px;">Everyone is settled up!</p>
+        <p style="font-size: 0.82rem; color: var(--color-text-secondary);">No payments or transfers needed.</p>
     </div>
     {% endif %}
 </section>
 
-<div class="settle-cta">
+<!-- Section 2: Individual Balances Summary Table -->
+<section class="section-card" id="balance-breakdown">
+    <div class="section-header" style="margin-bottom: 12px;">
+        <h2 class="section-title">👤 Individual Balances</h2>
+    </div>
+    <div class="table-responsive">
+        <table class="compact-balances-table">
+            <thead>
+                <tr>
+                    <th style="text-align: left;">Member</th>
+                    <th style="text-align: right;">Paid</th>
+                    <th style="text-align: right;">Fair Share</th>
+                    <th style="text-align: right;">Net Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for balance in balances %}
+                <tr id="balance-row-{{ balance.id }}">
+                    <td style="text-align: left;" class="member-name-cell">
+                        <span class="member-dot {% if balance.net > 0 %}dot-positive{% elif balance.net < 0 %}dot-negative{% else %}dot-zero{% endif %}"></span>
+                        <span class="member-name-text">{{ balance.name }}</span>
+                    </td>
+                    <td style="text-align: right;" class="text-muted">{{ currency_symbol }}{{ "%.2f"|format(balance.paid) }}</td>
+                    <td style="text-align: right;" class="text-muted">{{ currency_symbol }}{{ "%.2f"|format(balance.owed) }}</td>
+                    <td style="text-align: right;" class="net-balance-cell {% if balance.net > 0 %}text-positive{% elif balance.net < 0 %}text-negative{% else %}text-muted{% endif %}">
+                        {% if balance.net > 0 %}+{% endif %}{{ currency_symbol }}{{ "%.2f"|format(balance.net) }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div class="settle-cta" style="margin-top: 20px;">
     <a href="{{ url_for('main.group_dashboard', group_uuid=group.uuid) }}" class="btn btn-primary btn-lg btn-block" id="back-to-group-btn">
-        ← Back to Group
+        ← Back to Group Dashboard
     </a>
+</div>
+
+<!-- Hidden printable PDF report template for high-quality low-ink PDF printing -->
+<div id="pdf-printable-area" class="print-only">
+    <div class="print-header">
+        <h1>Split Expenses — Settlement Report</h1>
+        <h2>Group: {{ group.name }} ({{ group.currency }})</h2>
+        <p>Generated on: <span id="print-date"></span></p>
+    </div>
+    
+    <div class="print-section">
+        <h3>Group Overview</h3>
+        <table class="print-table">
+            <tr>
+                <td><strong>Total Spent:</strong> {{ currency_symbol }}{{ "%.2f"|format(total_spent) }}</td>
+                <td><strong>Members:</strong> {{ group.members|length }}</td>
+                <td><strong>Equal Share:</strong> {{ currency_symbol }}{{ "%.2f"|format(total_spent / (group.members|length if group.members|length > 0 else 1)) }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="print-section">
+        <h3>Required Payments (Settlements)</h3>
+        {% if settlements %}
+        <table class="print-table print-border">
+            <thead>
+                <tr>
+                    <th>From (Payer)</th>
+                    <th>To (Receiver)</th>
+                    <th style="text-align: right;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in settlements %}
+                <tr>
+                    <td>{{ s.from_name }}</td>
+                    <td>{{ s.to_name }}</td>
+                    <td style="text-align: right;"><strong>{{ currency_symbol }}{{ "%.2f"|format(s.amount) }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>Everyone is completely settled up!</p>
+        {% endif %}
+    </div>
+
+    <div class="print-section">
+        <h3>Individual Balances</h3>
+        <table class="print-table print-border">
+            <thead>
+                <tr>
+                    <th>Member</th>
+                    <th style="text-align: right;">Paid</th>
+                    <th style="text-align: right;">Fair Share</th>
+                    <th style="text-align: right;">Net Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in balances %}
+                <tr>
+                    <td>{{ b.name }}</td>
+                    <td style="text-align: right;">{{ currency_symbol }}{{ "%.2f"|format(b.paid) }}</td>
+                    <td style="text-align: right;">{{ currency_symbol }}{{ "%.2f"|format(b.owed) }}</td>
+                    <td style="text-align: right;"><strong>{% if b.net > 0 %}+{% endif %}{{ currency_symbol }}{{ "%.2f"|format(b.net) }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

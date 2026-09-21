@@ -61,6 +61,7 @@ class Expense(db.Model):
     amount = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(200), nullable=False)
     category = db.Column(db.String(50), nullable=False, default='Other')
+    entry_type = db.Column(db.String(20), nullable=False, default='expense')
     split_among = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
@@ -82,6 +83,7 @@ class Expense(db.Model):
             'amount': self.amount,
             'description': self.description,
             'category': self.category,
+            'entry_type': getattr(self, 'entry_type', None) or 'expense',
             'split_among': self.split_among_list,
             'created_at': self.created_at.isoformat(),
         }

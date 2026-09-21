@@ -29,5 +29,11 @@ def create_app(config_name='development'):
     with app.app_context():
         from app import models
         db.create_all()
+        try:
+            with db.engine.connect() as conn:
+                conn.execute(db.text("ALTER TABLE expenses ADD COLUMN entry_type VARCHAR(20) DEFAULT 'expense'"))
+                conn.commit()
+        except Exception:
+            pass
 
     return app

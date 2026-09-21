@@ -50,6 +50,9 @@
 <section class="section-card" id="members-section">
     <div class="section-header">
         <h2 class="section-title">👥 Members ({{ group.members|length }})</h2>
+        <button type="button" class="btn btn-outline btn-sm" id="toggle-add-member-btn" onclick="toggleAddMemberForm()">
+            ➕ Add Member
+        </button>
     </div>
     <div class="members-tags">
         {% for member in group.members %}
@@ -61,17 +64,39 @@
         </span>
         {% endfor %}
     </div>
+
+    <!-- Inline Add Member Panel -->
+    <div class="add-member-panel" id="add-member-panel" style="display: none; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--color-border);">
+        <form action="{{ url_for('main.add_member', group_uuid=group.uuid) }}" method="POST" class="form-row" style="align-items: flex-end; gap: 8px;">
+            <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                <label for="new-member-name" class="form-label">New Member Name</label>
+                <input type="text" id="new-member-name" name="member_name" class="form-input" placeholder="e.g., Ramesh" required maxlength="50">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm" style="height: 42px;">➕ Save Member</button>
+        </form>
+    </div>
 </section>
 
 <!-- Add Expense Section -->
 <section class="section-card" id="add-expense-section">
     <div class="section-header">
-        <h2 class="section-title">➕ Add Expense</h2>
+        <h2 class="section-title" id="form-section-title">➕ Add Entry</h2>
     </div>
+    
+    <div class="entry-type-selector" style="display: flex; gap: 10px; margin-bottom: 16px;">
+        <button type="button" class="btn btn-sm entry-type-btn active" id="tab-type-expense" onclick="switchExpenseType('expense')" style="flex: 1; padding: 8px 12px; font-weight: 600;">
+            💰 Group Expense
+        </button>
+        <button type="button" class="btn btn-sm entry-type-btn btn-outline" id="tab-type-advance" onclick="switchExpenseType('advance')" style="flex: 1; padding: 8px 12px; font-weight: 600;">
+            💵 Advance Collection
+        </button>
+    </div>
+
     <form action="{{ url_for('main.add_expense', group_uuid=group.uuid) }}" method="POST" id="add-expense-form">
+        <input type="hidden" name="entry_type" id="form-entry-type" value="expense">
         <div class="form-row">
             <div class="form-group form-group-half">
-                <label for="paid-by-select" class="form-label">Paid By</label>
+                <label for="paid-by-select" class="form-label" id="payer-label">Paid By</label>
                 <select id="paid-by-select" name="paid_by" class="form-input form-select" required>
                     <option value="">Select who paid</option>
                     {% for member in group.members %}
@@ -90,7 +115,7 @@
 
         <div class="form-row">
             <div class="form-group form-group-half">
-                <label for="expense-description" class="form-label">Description</label>
+                <label for="expense-description" class="form-label" id="description-label">Description</label>
                 <input type="text" id="expense-description" name="description" class="form-input"
                     placeholder="e.g., Lunch at hotel" required maxlength="200">
             </div>
@@ -105,10 +130,10 @@
         </div>
 
         <div class="form-group">
-            <label class="form-label">Split Among</label>
+            <label class="form-label" id="split-label">Split Among</label>
             <div class="split-options" id="split-options">
                 <label class="checkbox-label select-all-label">
-                    <input type="checkbox" id="select-all-members" checked onchange="toggleAllMembers(this)">
+                    <input type="checkbox" class="select-all-checkbox" checked onchange="toggleAllMembers(this)">
                     <span class="checkbox-custom"></span>
                     Select All
                 </label>
@@ -131,22 +156,32 @@
 <!-- Expenses List -->
 <section class="section-card" id="expenses-list-section">
     <div class="section-header">
-        <h2 class="section-title">📝 Expenses</h2>
+        <h2 class="section-title">📝 Transactions</h2>
         {% if group.expenses %}
-        <span class="total-badge" id="total-spent-badge">
-            Total: {{ currency_symbol }}{{ "%.2f"|format(group.expenses|sum(attribute='amount')) }}
-        </span>
+        {% set actual_total = group.expenses|rejectattr('entry_type', 'equalto', 'advance')|sum(attribute='amount') %}
+        {% set advance_total = group.expenses|selectattr('entry_type', 'equalto', 'advance')|sum(attribute='amount') %}
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+            <span class="total-badge" id="total-spent-badge">
+                Total Spent: {{ currency_symbol }}{{ "%.2f"|format(actual_total) }}
+            </span>
+            {% if advance_total > 0 %}
+            <span style="font-size: 0.78rem; opacity: 0.85; font-weight: 500; color: var(--color-accent, #10b981);">
+                (Advance Pool: {{ currency_symbol }}{{ "%.2f"|format(advance_total) }})
+            </span>
+            {% endif %}
+        </div>
         {% endif %}
     </div>
 
     {% if group.expenses %}
     <div class="expenses-list">
         {% for expense in group.expenses|sort(attribute='created_at', reverse=true) %}
-        <div class="expense-item" id="expense-item-{{ expense.id }}">
+        <div class="expense-item {% if expense.entry_type == 'advance' %}expense-item-advance{% endif %}" id="expense-item-{{ expense.id }}">
             <div class="expense-main">
                 <div class="expense-info">
                     <span class="expense-category-icon">
-                        {% if expense.category == 'Food & Drinks' %}🍽️
+                        {% if expense.entry_type == 'advance' %}💵
+                        {% elif expense.category == 'Food & Drinks' %}🍽️
                         {% elif expense.category == 'Transport' %}🚗
                         {% elif expense.category == 'Tickets & Entry' %}🎫
                         {% elif expense.category == 'Accommodation' %}🏨
@@ -158,13 +193,22 @@
                         {% endif %}
                     </span>
                     <div>
-                        <div class="expense-description">{{ expense.description }}</div>
+                        <div class="expense-description">
+                            {% if expense.entry_type == 'advance' %}
+                            <span style="display: inline-block; font-size: 0.7rem; background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-right: 4px; vertical-align: middle;">ADVANCE</span>
+                            {% endif %}
+                            {{ expense.description }}
+                        </div>
                         <div class="expense-meta">
+                            {% if expense.entry_type == 'advance' %}
+                            Collected by <strong>{{ expense.paid_by.name if expense.paid_by else 'Unknown' }}</strong> · Advance Collection
+                            {% else %}
                             Paid by <strong>{{ expense.paid_by.name if expense.paid_by else 'Unknown' }}</strong> · {{ expense.category }}
+                            {% endif %}
                         </div>
                     </div>
                 </div>
-                <div class="expense-amount">
+                <div class="expense-amount {% if expense.entry_type == 'advance' %}text-positive{% endif %}">
                     {{ currency_symbol }}{{ "%.2f"|format(expense.amount) }}
                 </div>
             </div>
@@ -175,7 +219,7 @@
                 <form action="{{ url_for('main.delete_expense', group_uuid=group.uuid, expense_id=expense.id) }}"
                       method="POST" class="delete-form">
                     <button type="submit" class="btn btn-danger btn-sm" id="delete-expense-{{ expense.id }}"
-                        onclick="return confirmFormSubmit(event, 'Delete Expense', 'Are you sure you want to remove this expense record?', '🗑️ Delete Expense', '🗑️', 'btn-danger')">
+                        onclick="return confirmFormSubmit(event, 'Delete Entry', 'Are you sure you want to remove this transaction record?', '🗑️ Delete', '🗑️', 'btn-danger')">
                         🗑️ Delete
                     </button>
                 </form>
@@ -184,7 +228,8 @@
             <!-- Inline Edit Panel -->
             <div class="expense-edit-panel" id="edit-panel-{{ expense.id }}" style="display: none;">
                 <form action="{{ url_for('main.edit_expense', group_uuid=group.uuid, expense_id=expense.id) }}" method="POST">
-                    <h4 class="edit-panel-title">✏️ Edit Expense</h4>
+                    <input type="hidden" name="entry_type" value="{{ expense.entry_type or 'expense' }}">
+                    <h4 class="edit-panel-title">✏️ Edit {% if expense.entry_type == 'advance' %}Advance Collection{% else %}Expense{% endif %}</h4>
                     <div class="form-group">
                         <label class="form-label">Description</label>
                         <input type="text" name="description" class="form-input" value="{{ expense.description }}" required maxlength="200">
@@ -195,7 +240,7 @@
                             <input type="number" name="amount" step="0.01" min="0.01" class="form-input" value="{{ '%.2f'|format(expense.amount) }}" required>
                         </div>
                         <div class="form-group form-group-half">
-                            <label class="form-label">Paid By</label>
+                            <label class="form-label">{% if expense.entry_type == 'advance' %}Collector / Treasurer{% else %}Paid By{% endif %}</label>
                             <select name="paid_by" class="form-input form-select" required>
                                 {% for member in group.members %}
                                 <option value="{{ member.id }}" {% if member.id == expense.paid_by_id %}selected{% endif %}>
@@ -214,7 +259,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Split Among</label>
+                        <label class="form-label">{% if expense.entry_type == 'advance' %}Collected From{% else %}Split Among{% endif %}</label>
                         {% set current_splits = expense.split_among_list %}
                         <div class="checkbox-grid">
                             {% for member in group.members %}
@@ -239,7 +284,7 @@
     {% else %}
     <div class="empty-state" id="no-expenses-message">
         <span class="empty-icon">📭</span>
-        <p>No expenses yet. Add the first one above!</p>
+        <p>No transactions yet. Add the first one above!</p>
     </div>
     {% endif %}
 </section>

@@ -77,6 +77,75 @@
     box-sizing: border-box;
 }
 
+/* --- Flash Notifications --- */
+.flash-container {
+    margin-bottom: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.flash-alert {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    line-height: 1.4;
+    border: 1px solid transparent;
+    animation: flashSlideIn 300ms ease-out forwards;
+}
+
+@keyframes flashSlideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.flash-error {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+}
+
+.flash-success {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #6ee7b7;
+}
+
+.flash-info {
+    background: rgba(13, 148, 136, 0.15);
+    border-color: rgba(13, 148, 136, 0.3);
+    color: #5eead4;
+}
+
+.flash-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.flash-message {
+    flex: 1;
+}
+
+.flash-close-btn {
+    background: none;
+    border: none;
+    color: currentColor;
+    font-size: 1.1rem;
+    cursor: pointer;
+    opacity: 0.7;
+    padding: 0 4px;
+    line-height: 1;
+    transition: opacity var(--transition-fast);
+}
+
+.flash-close-btn:hover {
+    opacity: 1;
+}
+
 html {
     font-size: 16px;
     scroll-behavior: smooth;
@@ -1779,5 +1848,237 @@ a:hover {
 .section-card:nth-child(2) { animation-delay: 100ms; }
 .section-card:nth-child(3) { animation-delay: 200ms; }
 .section-card:nth-child(4) { animation-delay: 300ms; }
+
+/* --- Modernized Settlements Flow Grid & Compact Balances Table --- */
+.settlements-flow-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-md);
+}
+
+.flow-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 0.85rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.flow-card:hover {
+    border-color: var(--color-primary-light);
+    transform: translateY(-2px);
+}
+
+.flow-person {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 60px;
+}
+
+.flow-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    background: var(--color-negative);
+    color: white;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-creditor {
+    background: var(--color-positive);
+}
+
+.flow-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text);
+    text-align: center;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.flow-arrow-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.flow-amount-badge {
+    background: var(--color-primary-bg);
+    color: var(--color-primary-light);
+    border: 1px solid rgba(13, 148, 136, 0.3);
+    border-radius: var(--radius-full);
+    padding: 2px 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.flow-line-arrow {
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--color-negative), var(--color-positive));
+    position: relative;
+    margin: 4px 0;
+}
+
+.flow-arrow-head {
+    position: absolute;
+    right: -4px;
+    top: -8px;
+    font-size: 0.8rem;
+    color: var(--color-positive);
+    font-weight: bold;
+}
+
+.flow-pays-text {
+    font-size: 0.68rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* --- Compact Balances Data Table --- */
+.compact-balances-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+}
+
+.compact-balances-table th,
+.compact-balances-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.compact-balances-table th {
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.compact-balances-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.compact-balances-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.member-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.member-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+}
+
+.dot-positive { background: var(--color-positive); }
+.dot-negative { background: var(--color-negative); }
+.dot-zero { background: var(--color-text-muted); }
+
+.net-balance-cell {
+    font-weight: 700;
+}
+
+/* --- PDF Print Stylesheet (@media print) --- */
+.print-only {
+    display: none;
+}
+
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
+        font-size: 12pt;
+    }
+
+    .app-header,
+    .app-footer,
+    .back-link,
+    .settlement-action-buttons,
+    .settle-cta,
+    .offline-banner,
+    .custom-modal-backdrop,
+    #settlements-section,
+    #balance-breakdown,
+    #total-overview,
+    .settlement-header {
+        display: none !important;
+    }
+
+    .print-only {
+        display: block !important;
+        padding: 20px;
+    }
+
+    .print-header {
+        text-align: center;
+        border-bottom: 2px solid #333;
+        padding-bottom: 12px;
+        margin-bottom: 20px;
+    }
+
+    .print-header h1 {
+        font-size: 18pt;
+        margin-bottom: 4px;
+    }
+
+    .print-header h2 {
+        font-size: 14pt;
+        color: #555;
+    }
+
+    .print-section {
+        margin-bottom: 20px;
+    }
+
+    .print-section h3 {
+        font-size: 13pt;
+        border-bottom: 1px solid #ccc;
+        padding-bottom: 4px;
+        margin-bottom: 8px;
+    }
+
+    .print-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10pt;
+    }
+
+    .print-table td,
+    .print-table th {
+        padding: 6px 8px;
+    }
+
+    .print-border td,
+    .print-border th {
+        border: 1px solid #ddd;
+    }
+
+    .print-border th {
+        background: #f2f2f2;
+    }
+}
 
 

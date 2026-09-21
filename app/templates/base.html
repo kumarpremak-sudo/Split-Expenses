@@ -36,6 +36,24 @@
 
     <main class="main-content">
         <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="flash-container" id="flash-container">
+                    {% for category, message in messages %}
+                    <div class="flash-alert flash-{{ category }}" role="alert">
+                        <span class="flash-icon">
+                            {% if category == 'error' %}⚠️
+                            {% elif category == 'success' %}✅
+                            {% else %}ℹ️{% endif %}
+                        </span>
+                        <span class="flash-message">{{ message }}</span>
+                        <button type="button" class="flash-close-btn" onclick="this.parentElement.remove()" aria-label="Close notification">✕</button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
+
             {% if error_404 is defined and error_404 %}
             <div class="error-page">
                 <div class="error-icon">🔍</div>
